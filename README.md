@@ -1,3 +1,4 @@
+>>>>>>> origin/main
 # AutoRAG Repair Assistant
 
 An **agentic RAG (Retrieval-Augmented Generation)** assistant that answers
@@ -411,3 +412,6 @@ including:
 ## License
 
 MIT. See `LICENSE` (if present) for details.
+=======
+# RAG
+>>>>>>> dfa02a97798de5db55e033826be6b5b0846fda87
