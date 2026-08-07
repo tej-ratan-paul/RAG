@@ -1,0 +1,55 @@
+# AutoRAG Repair Assistant — local production-style stack.
+#
+# Requires Docker Compose v2.24+ (for the optional env_file form).
+#
+# Basic use:
+#   docker compose up --build            # UI on :8501, health probes on :8080
+#   docker compose --profile with-ollama up --build   # + bundled Ollama
+#
+# To point the app at an Ollama running on the host (Linux), add:
+#   extra_hosts:
+#     - "host.docker.internal:host-gateway"
+#   environment:
+#     LLM__BASE_URL: http://host.docker.internal:11434
+
+services:
+  auto-rag:
+    build:
+      context: .
+    image: auto-rag:0.1.0
+    container_name: auto-rag
+    restart: unless-stopped
+    ports:
+      - "8501:8501" # Streamlit UI
+      - "8080:8080" # Health probes (/health, /ready)
+    environment:
+      APP__ENVIRONMENT: production
+      LOGGING__JSON_FORMAT: "true"
+      LOGGING__LEVEL: INFO
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - auto-rag-data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "scripts/healthcheck.py", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 90s
+      retries: 3
+
+  # Optional bundled Ollama for a self-contained stack. First launch pulls
+  # the LLM image; set LLM__BASE_URL=http://ollama:11434 via .env to use it.
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["with-ollama"]
+    container_name: auto-rag-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+
+volumes:
+  auto-rag-data:
+  ollama-models:

@@ -1,0 +1,82 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "auto-rag"
+version = "0.1.0"
+description = "Agentic RAG Automobile Repair Assistant"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "AutoRAG Team" }]
+keywords = ["rag", "langgraph", "langchain", "automotive", "repair", "agent"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries",
+]
+
+dependencies = [
+    "pydantic>=2.9,<3",
+    "pydantic-settings>=2.6,<3",
+    "python-dotenv>=1.0,<2",
+    "numpy>=1.26,<3",
+    "langchain>=1.0,<2",
+    "langchain-core>=1.0,<2",
+    "langchain-community>=0.4,<1",
+    "langgraph>=1.0,<2",
+    "langgraph-checkpoint-sqlite>=2.0,<3",
+    "langchain-openai>=0.3,<1",
+    "chromadb>=1.0,<2",
+    "sentence-transformers>=3.0,<6",
+    "rank-bm25>=0.2.2,<1",
+    "pypdf>=5.0,<7",
+    "tiktoken>=0.8,<1",
+    "ollama>=0.4,<1",
+    "streamlit>=1.40",
+    "beautifulsoup4>=4.12,<5",
+    "lxml>=6,<7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0,<10",
+    "pytest-asyncio>=0.25,<2",
+    "ruff>=0.9,<1",
+    "reportlab>=4.0,<5",
+]
+
+[project.urls]
+Homepage = "https://example.invalid/auto-rag"
+
+[project.scripts]
+auto-rag-ingest = "auto_rag.ingestion.cli:main"
+auto-rag-retrieve = "auto_rag.retrieval.cli:main"
+auto-rag-ask = "auto_rag.rag.cli:main"
+auto-rag-ui = "auto_rag.ui.app:run"
+auto-rag-health = "auto_rag.ops.health_cli:main"
+auto-rag-config-check = "auto_rag.ops.validate:main"
+auto-rag-bench = "auto_rag.ops.benchmark:main"
+auto-rag-eval = "auto_rag.eval.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/auto_rag"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q"
+log_cli_level = "WARNING"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "ASYNC"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["auto_rag"]

@@ -1,0 +1,25 @@
+# Build context exclusions
+.git
+.github
+.venv
+.venv-win
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+htmlcov
+dist
+build
+*.egg-info
+
+# Runtime data and secrets must never enter the image
+data
+.env
+.env.*
+!.env.example
+
+# Local tooling
+.idea
+.vscode
+*.log
