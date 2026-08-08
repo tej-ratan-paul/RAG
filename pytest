@@ -1,0 +1,1361 @@
+warning: in the working copy of 'src/auto_rag/constants.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/auto_rag/db/migrations.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/auto_rag/db/models.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/auto_rag/ingestion/cli.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/auto_rag/ingestion/loaders.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/auto_rag/ingestion/metadata.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/auto_rag/ingestion/pipeline.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/auto_rag/rag/citations.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/auto_rag/retrieval/cli.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_loaders.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_pipeline.py', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/README.md b/README.md[m
+[1mindex 2726358..bd5c7e3 100644[m
+[1m--- a/README.md[m
+[1m+++ b/README.md[m
+[36m@@ -1,4 +1,3 @@[m
+[31m->>>>>>> origin/main[m
+ # AutoRAG Repair Assistant[m
+ [m
+ An **agentic RAG (Retrieval-Augmented Generation)** assistant that answers[m
+[36m@@ -39,10 +38,13 @@[m [mconfidence scoring, and safety notes — it does not guess.[m
+ [m
+ - Loads PDF and plain-text documents (`pypdf`), with automatic detection of[m
+   document type (service manual, repair manual, DTC, TSB, wiring diagram).[m
+[32m+[m[32m- Loads **CSV files** and **SQL sources** (SQLite files or remote[m
+[32m+[m[32m  Postgres/MySQL URLs) as row-per-chunk tabular data; credentials in stored[m
+[32m+[m[32m  source labels are redacted.[m
+ - Extracts vehicle metadata (make, model, year, engine, VIN) from text.[m
+ - Recursive chunking with token-aware sizes and configurable overlap.[m
+[31m-- Deduplication by file hash; re-indexing only changed files (`--force` to[m
+[31m-  override).[m
+[32m+[m[32m- Deduplication by file hash (or content fingerprint for SQL snapshots);[m
+[32m+[m[32m  re-indexing only changed sources (`--force` to override).[m
+ - Embedding cache (JSON, keyed by text hash) to speed up re-ingestion.[m
+ [m
+ **Retrieval**[m
+[36m@@ -211,6 +213,15 @@[m [mauto-rag-ingest --directory data/documents[m
+ The repo ships three demo documents: a Toyota Camry service manual (PDF),[m
+ a Honda Civic maintenance schedule (TXT), and a DTC P0300 codesheet (PDF).[m
+ [m
+[32m+[m[32mTo also index tabular workshop data, point ingestion at a CSV file or a SQL[m
+[32m+[m[32msource (SQLite file or remote URL). Each row becomes its own retrievable chunk:[m
+[32m+[m
+[32m+[m[32m```powershell[m
+[32m+[m[32mauto-rag-ingest --csv data/parts.csv[m
+[32m+[m[32mauto-rag-ingest --sqlite data/demo/workshop.db --table parts[m
+[32m+[m[32mauto-rag-ingest --sql-url "postgresql://user:pass@host:5432/workshop" --table vehicles[m
+[32m+[m[32m```[m
+[32m+[m
+ **2. Ask a grounded question**[m
+ [m
+ ```powershell[m
+[36m@@ -249,13 +260,25 @@[m [mOpen <http://localhost:8501>.[m
+ ```[m
+ --directory DIR   ingest all documents in a directory[m
+ --file FILE       ingest a single document[m
+[32m+[m[32m--csv FILE        ingest a CSV file (one chunk per row)[m
+[32m+[m[32m--sqlite FILE     ingest rows from a SQLite database file[m
+[32m+[m[32m--sql-url URL     ingest rows from a remote SQL source (postgresql://, mysql://)[m
+[32m+[m[32m--table TABLE     table to read (SELECT * FROM <table>)[m
+[32m+[m[32m--query SQL       raw SQL query (takes precedence over --table)[m
+[32m+[m[32m--limit N         cap the number of SQL rows ingested[m
+ --doc-type TYPE   override document type (service_manual, repair_manual,[m
+[31m-                  dtc, tsb, wiring_diagram)[m
+[31m---force           re-index files already in the store[m
+[32m+[m[32m                  dtc, tsb, wiring_diagram, tabular)[m
+[32m+[m[32m--force           re-index sources already in the store[m
+ --reset           delete all indexed chunks first[m
+ --seed            seed demo structured data into SQLite[m
+ ```[m
+ [m
+[32m+[m[32mFile sources (`--directory` / `--file` / `--csv`) and SQL sources[m
+[32m+[m[32m(`--sqlite` / `--sql-url`) are mutually exclusive; `--table`, `--query`, and[m
+[32m+[m[32m`--limit` apply only to SQL ingestion. Remote SQL requires the matching[m
+[32m+[m[32moptional driver (`psycopg2` for Postgres, `pymysql` for MySQL) — SQLite files[m
+[32m+[m[32mneed none.[m
+[32m+[m
+ ### `auto-rag-retrieve`[m
+ [m
+ ```[m
+[36m@@ -338,7 +361,7 @@[m [mruff check src tests[m
+ python -m pytest[m
+ ```[m
+ [m
+[31m-The suite currently contains **259 passing tests** covering ingestion,[m
+[32m+[m[32mThe suite currently contains **294 passing tests** covering ingestion,[m
+ retrieval, the agentic graph, LLM adapters, database, configuration, the ops[m
+ tools, and evaluation.[m
+ [m
+[36m@@ -412,6 +435,4 @@[m [mincluding:[m
+ ## License[m
+ [m
+ MIT. See `LICENSE` (if present) for details.[m
+[31m-=======[m
+[31m-# RAG[m
+[31m->>>>>>> dfa02a97798de5db55e033826be6b5b0846fda87[m
+[41m+[m
+[1mdiff --git a/src/auto_rag/constants.py b/src/auto_rag/constants.py[m
+[1mindex 5b23b9c..1a568d7 100644[m
+[1m--- a/src/auto_rag/constants.py[m
+[1m+++ b/src/auto_rag/constants.py[m
+[36m@@ -33,6 +33,7 @@[m [mDOCUMENT_TYPE_REPAIR_MANUAL: Final[str] = "repair_manual"[m
+ DOCUMENT_TYPE_DTC: Final[str] = "dtc"[m
+ DOCUMENT_TYPE_TSB: Final[str] = "tsb"[m
+ DOCUMENT_TYPE_WIRING_DIAGRAM: Final[str] = "wiring_diagram"[m
+[32m+[m[32mDOCUMENT_TYPE_TABULAR: Final[str] = "tabular"[m
+ [m
+ DOCUMENT_TYPES: Final[tuple[str, ...]] = ([m
+     DOCUMENT_TYPE_SERVICE_MANUAL,[m
+[36m@@ -40,4 +41,5 @@[m [mDOCUMENT_TYPES: Final[tuple[str, ...]] = ([m
+     DOCUMENT_TYPE_DTC,[m
+     DOCUMENT_TYPE_TSB,[m
+     DOCUMENT_TYPE_WIRING_DIAGRAM,[m
+[32m+[m[32m    DOCUMENT_TYPE_TABULAR,[m
+ )[m
+[1mdiff --git a/src/auto_rag/db/migrations.py b/src/auto_rag/db/migrations.py[m
+[1mindex 0fd4bba..c39c21e 100644[m
+[1m--- a/src/auto_rag/db/migrations.py[m
+[1m+++ b/src/auto_rag/db/migrations.py[m
+[36m@@ -19,6 +19,38 @@[m [mclass Migration:[m
+     statements: tuple[str, ...][m
+ [m
+ [m
+[32m+[m[32m_DOCUMENTS_DDL: str = """[m
+[32m+[m[32mCREATE TABLE documents ([m
+[32m+[m[32m    id           INTEGER PRIMARY KEY,[m
+[32m+[m[32m    source_path  TEXT NOT NULL,[m
+[32m+[m[32m    file_hash    TEXT NOT NULL UNIQUE,[m
+[32m+[m[32m    doc_type     TEXT NOT NULL CHECK ([m
+[32m+[m[32m        doc_type IN ([m
+[32m+[m[32m            'service_manual','repair_manual','dtc','tsb','wiring_diagram','tabular'[m
+[32m+[m[32m        )[m
+[32m+[m[32m    ),[m
+[32m+[m[32m    title        TEXT,[m
+[32m+[m[32m    make         TEXT,[m
+[32m+[m[32m    model        TEXT,[m
+[32m+[m[32m    year         INTEGER,[m
+[32m+[m[32m    engine       TEXT,[m
+[32m+[m[32m    vin          TEXT,[m
+[32m+[m[32m    page_count   INTEGER NOT NULL DEFAULT 0,[m
+[32m+[m[32m    chunk_count  INTEGER NOT NULL DEFAULT 0,[m
+[32m+[m[32m    status       TEXT NOT NULL DEFAULT 'pending' CHECK ([m
+[32m+[m[32m        status IN ('pending','indexed','failed')[m
+[32m+[m[32m    ),[m
+[32m+[m[32m    error        TEXT,[m
+[32m+[m[32m    ingested_at  TEXT NOT NULL DEFAULT (datetime('now')),[m
+[32m+[m[32m    updated_at   TEXT NOT NULL DEFAULT (datetime('now'))[m
+[32m+[m[32m)[m
+[32m+[m[32m"""[m
+[32m+[m
+[32m+[m[32m_DOCUMENTS_COLUMNS: str = ([m
+[32m+[m[32m    "id, source_path, file_hash, doc_type, title, make, model, year, engine, "[m
+[32m+[m[32m    "vin, page_count, chunk_count, status, error, ingested_at, updated_at"[m
+[32m+[m[32m)[m
+[32m+[m
+ _INITIAL_SCHEMA: tuple[str, ...] = ([m
+     # ------------------------------------------------------------------ #[m
+     # Schema bookkeeping[m
+[36m@@ -160,30 +192,7 @@[m [m_INITIAL_SCHEMA: tuple[str, ...] = ([m
+     # ------------------------------------------------------------------ #[m
+     # Source documents (ingestion tracking)[m
+     # ------------------------------------------------------------------ #[m
+[31m-    """[m
+[31m-    CREATE TABLE IF NOT EXISTS documents ([m
+[31m-        id           INTEGER PRIMARY KEY,[m
+[31m-        source_path  TEXT NOT NULL,[m
+[31m-        file_hash    TEXT NOT NULL UNIQUE,[m
+[31m-        doc_type     TEXT NOT NULL CHECK ([m
+[31m-            doc_type IN ('service_manual','repair_manual','dtc','tsb','wiring_diagram')[m
+[31m-        ),[m
+[31m-        title        TEXT,[m
+[31m-        make         TEXT,[m
+[31m-        model        TEXT,[m
+[31m-        year         INTEGER,[m
+[31m-        engine       TEXT,[m
+[31m-        vin          TEXT,[m
+[31m-        page_count   INTEGER NOT NULL DEFAULT 0,[m
+[31m-        chunk_count  INTEGER NOT NULL DEFAULT 0,[m
+[31m-        status       TEXT NOT NULL DEFAULT 'pending' CHECK ([m
+[31m-            status IN ('pending','indexed','failed')[m
+[31m-        ),[m
+[31m-        error        TEXT,[m
+[31m-        ingested_at  TEXT NOT NULL DEFAULT (datetime('now')),[m
+[31m-        updated_at   TEXT NOT NULL DEFAULT (datetime('now'))[m
+[31m-    )[m
+[31m-    """,[m
+[32m+[m[32m    _DOCUMENTS_DDL,[m
+     # ------------------------------------------------------------------ #[m
+     # Conversations (persisted chat + vehicle context for memory)[m
+     # ------------------------------------------------------------------ #[m
+[36m@@ -220,4 +229,17 @@[m [mMIGRATIONS: tuple[Migration, ...] = ([m
+         "maintenance, DTCs, documents, conversations.",[m
+         statements=_INITIAL_SCHEMA,[m
+     ),[m
+[32m+[m[32m    Migration([m
+[32m+[m[32m        version="0002_tabular_doc_type",[m
+[32m+[m[32m        description="Allow doc_type 'tabular' for CSV/SQL ingestion.",[m
+[32m+[m[32m        statements=([m
+[32m+[m[32m            "ALTER TABLE documents RENAME TO documents_0002_old",[m
+[32m+[m[32m            _DOCUMENTS_DDL,[m
+[32m+[m[32m            ([m
+[32m+[m[32m                "INSERT INTO documents (" + _DOCUMENTS_COLUMNS + ") "[m
+[32m+[m[32m                "SELECT " + _DOCUMENTS_COLUMNS + " FROM documents_0002_old"[m
+[32m+[m[32m            ),[m
+[32m+[m[32m            "DROP TABLE documents_0002_old",[m
+[32m+[m[32m        ),[m
+[32m+[m[32m    ),[m
+ )[m
+[1mdiff --git a/src/auto_rag/db/models.py b/src/auto_rag/db/models.py[m
+[1mindex 65d042d..ef91b79 100644[m
+[1m--- a/src/auto_rag/db/models.py[m
+[1m+++ b/src/auto_rag/db/models.py[m
+[36m@@ -16,6 +16,7 @@[m [mDocType = Literal[[m
+     "dtc",[m
+     "tsb",[m
+     "wiring_diagram",[m
+[32m+[m[32m    "tabular",[m
+ ][m
+ [m
+ DocStatus = Literal["pending", "indexed", "failed"][m
+[1mdiff --git a/src/auto_rag/ingestion/cli.py b/src/auto_rag/ingestion/cli.py[m
+[1mindex ee9dfe9..ffa97fd 100644[m
+[1m--- a/src/auto_rag/ingestion/cli.py[m
+[1m+++ b/src/auto_rag/ingestion/cli.py[m
+[36m@@ -4,6 +4,10 @@[m [mUsage::[m
+ [m
+     python -m auto_rag.ingestion.cli --directory data/documents[m
+     python -m auto_rag.ingestion.cli --file manual.pdf --doc-type service_manual[m
+[32m+[m[32m    python -m auto_rag.ingestion.cli --csv parts.csv[m
+[32m+[m[32m    python -m auto_rag.ingestion.cli --sqlite workshop.db --table parts[m
+[32m+[m[32m    python -m auto_rag.ingestion.cli --sqlite workshop.db --query "SELECT * FROM dtc_codes WHERE severity='high'"[m
+[32m+[m[32m    python -m auto_rag.ingestion.cli --sql-url "postgresql://user:pass@host/db" --table vehicles[m
+     python -m auto_rag.ingestion.cli --reset[m
+ """[m
+ [m
+[36m@@ -24,6 +28,15 @@[m [mfrom auto_rag.logging_config import get_logger, setup_logging[m
+ [m
+ logger = get_logger(__name__)[m
+ [m
+[32m+[m[32m_DOC_TYPE_CHOICES = [[m
+[32m+[m[32m    "service_manual",[m
+[32m+[m[32m    "repair_manual",[m
+[32m+[m[32m    "dtc",[m
+[32m+[m[32m    "tsb",[m
+[32m+[m[32m    "wiring_diagram",[m
+[32m+[m[32m    "tabular",[m
+[32m+[m[32m][m
+[32m+[m
+ [m
+ def build_parser() -> argparse.ArgumentParser:[m
+     parser = argparse.ArgumentParser([m
+[36m@@ -33,9 +46,30 @@[m [mdef build_parser() -> argparse.ArgumentParser:[m
+     source = parser.add_mutually_exclusive_group(required=False)[m
+     source.add_argument("--directory", type=Path, help="Directory of documents to ingest.")[m
+     source.add_argument("--file", type=Path, help="Single document to ingest.")[m
+[32m+[m[32m    source.add_argument("--csv", type=Path, help="Single CSV file to ingest (row per chunk).")[m
+[32m+[m[32m    sql = parser.add_mutually_exclusive_group(required=False)[m
+[32m+[m[32m    sql.add_argument("--sqlite", type=Path, help="SQLite database file to ingest rows from.")[m
+[32m+[m[32m    sql.add_argument([m
+[32m+[m[32m        "--sql-url",[m
+[32m+[m[32m        type=str,[m
+[32m+[m[32m        help=([m
+[32m+[m[32m            "Remote SQL connection URL (postgresql://... or mysql://...). "[m
+[32m+[m[32m            "Requires the matching optional driver package."[m
+[32m+[m[32m        ),[m
+[32m+[m[32m    )[m
+[32m+[m[32m    parser.add_argument("--table", default=None, help="Table to ingest (SELECT * FROM <table>).")[m
+[32m+[m[32m    parser.add_argument([m
+[32m+[m[32m        "--query", default=None, help="Raw SQL query to ingest instead of a whole table."[m
+[32m+[m[32m    )[m
+[32m+[m[32m    parser.add_argument([m
+[32m+[m[32m        "--limit",[m
+[32m+[m[32m        type=int,[m
+[32m+[m[32m        default=None,[m
+[32m+[m[32m        help="Maximum number of SQL rows to ingest.",[m
+[32m+[m[32m    )[m
+     parser.add_argument([m
+         "--doc-type",[m
+[31m-        choices=["service_manual", "repair_manual", "dtc", "tsb", "wiring_diagram"],[m
+[32m+[m[32m        choices=_DOC_TYPE_CHOICES,[m
+         default=None,[m
+         help="Explicit document type override.",[m
+     )[m
+[36m@@ -47,6 +81,8 @@[m [mdef build_parser() -> argparse.ArgumentParser:[m
+ [m
+ def main(argv: list[str] | None = None) -> int:[m
+     args = build_parser().parse_args(argv)[m
+[32m+[m[32m    _validate_source_args(args)[m
+[32m+[m
+     settings = get_settings()[m
+     settings.prepare_directories()[m
+     setup_logging(settings)[m
+[36m@@ -74,19 +110,44 @@[m [mdef main(argv: list[str] | None = None) -> int:[m
+     )[m
+ [m
+     results: list = [][m
+[31m-    if args.file:[m
+[32m+[m[32m    if args.sqlite or args.sql_url:[m
+[32m+[m[32m        source = args.sqlite or args.sql_url[m
+[32m+[m[32m        results.append([m
+[32m+[m[32m            pipeline.ingest_sql([m
+[32m+[m[32m                source,[m
+[32m+[m[32m                table=args.table,[m
+[32m+[m[32m                query=args.query,[m
+[32m+[m[32m                limit=args.limit,[m
+[32m+[m[32m                force=args.force,[m
+[32m+[m[32m            )[m
+[32m+[m[32m        )[m
+[32m+[m[32m    elif args.file:[m
+         results.append(pipeline.ingest_path(args.file, doc_type=args.doc_type, force=args.force))[m
+[32m+[m[32m    elif args.csv:[m
+[32m+[m[32m        results.append(pipeline.ingest_csv(args.csv, doc_type=args.doc_type, force=args.force))[m
+     elif args.directory:[m
+         results = pipeline.ingest_directory(args.directory, doc_type=args.doc_type, force=args.force)[m
+     else:[m
+[31m-        parser = build_parser()[m
+[31m-        parser.error("One of --directory or --file is required")[m
+[32m+[m[32m        build_parser().error("One of --directory, --file, --csv, --sqlite, or --sql-url is required")[m
+         return 2[m
+ [m
+     _report(results, vector_store.count())[m
+     return 1 if any(r.is_error for r in results) else 0[m
+ [m
+ [m
+[32m+[m[32mdef _validate_source_args(args: argparse.Namespace) -> None:[m
+[32m+[m[32m    """Reject invalid source flag combinations before any heavy setup."""[m
+[32m+[m[32m    parser = build_parser()[m
+[32m+[m[32m    has_file_source = bool(args.directory or args.file or args.csv)[m
+[32m+[m[32m    has_sql_source = bool(args.sqlite or args.sql_url)[m
+[32m+[m[32m    if has_file_source and has_sql_source:[m
+[32m+[m[32m        parser.error("--sqlite/--sql-url cannot be combined with --directory/--file/--csv")[m
+[32m+[m[32m    if not has_file_source and not has_sql_source:[m
+[32m+[m[32m        parser.error("One of --directory, --file, --csv, --sqlite, or --sql-url is required")[m
+[32m+[m[32m    if not has_sql_source and (args.table or args.query or args.limit is not None):[m
+[32m+[m[32m        parser.error("--table/--query/--limit require --sqlite or --sql-url")[m
+[32m+[m
+[32m+[m
+ def _report(results, total_chunks: int) -> None:[m
+     indexed = sum(1 for r in results if r.status == "indexed")[m
+     skipped = sum(1 for r in results if r.status == "skipped")[m
+[1mdiff --git a/src/auto_rag/ingestion/loaders.py b/src/auto_rag/ingestion/loaders.py[m
+[1mindex 59c08e3..129be62 100644[m
+[1m--- a/src/auto_rag/ingestion/loaders.py[m
+[1m+++ b/src/auto_rag/ingestion/loaders.py[m
+[36m@@ -1,12 +1,17 @@[m
+ """Document loaders.[m
+ [m
+ Extracts raw text from source files into a list of :class:`PageContent`[m
+[31m-objects, preserving page boundaries and per-page raw metadata.[m
+[32m+[m[32mobjects, preserving page boundaries and per-page raw metadata. Supports[m
+[32m+[m[32mPDF, plain text, CSV, and SQL (SQLite files or remote SQL URLs).[m
+ """[m
+ [m
+ from __future__ import annotations[m
+ [m
+[32m+[m[32mimport csv[m
+[32m+[m[32mimport io[m
+ import logging[m
+[32m+[m[32mimport re[m
+[32m+[m[32mimport sqlite3[m
+ from dataclasses import dataclass, field[m
+ from pathlib import Path[m
+ from typing import Any, Protocol[m
+[36m@@ -77,10 +82,245 @@[m [mclass TextLoader:[m
+         return [PageContent(page_number=1, text=text, metadata={"page_number": 1})][m
+ [m
+ [m
+[32m+[m[32mclass CSVLoader:[m
+[32m+[m[32m    """Loads CSV files as one row per page.[m
+[32m+[m
+[32m+[m[32m    Each row becomes a single :class:`PageContent` whose text is formatted as[m
+[32m+[m[32m    ``column: value`` pairs, so every row stays intact as one chunk. The header[m
+[32m+[m[32m    row defines the column names, stored in the page metadata.[m
+[32m+[m[32m    """[m
+[32m+[m
+[32m+[m[32m    def load(self, path: Path) -> list[PageContent]:[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            raw = path.read_bytes()[m
+[32m+[m[32m        except OSError as exc:[m
+[32m+[m[32m            raise IngestionError(f"Failed to read CSV file {path}: {exc}") from exc[m
+[32m+[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            text = raw.decode("utf-8-sig")[m
+[32m+[m[32m        except UnicodeDecodeError as exc:[m
+[32m+[m[32m            raise IngestionError([m
+[32m+[m[32m                f"CSV {path} is not valid UTF-8 (only UTF-8 CSV is supported)"[m
+[32m+[m[32m            ) from exc[m
+[32m+[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            reader = csv.DictReader(io.StringIO(text))[m
+[32m+[m[32m            fieldnames = reader.fieldnames[m
+[32m+[m[32m            rows = list(reader)[m
+[32m+[m[32m        except csv.Error as exc:[m
+[32m+[m[32m            raise IngestionError(f"Failed to parse CSV {path}: {exc}") from exc[m
+[32m+[m
+[32m+[m[32m        if not fieldnames:[m
+[32m+[m[32m            raise IngestionError(f"CSV {path} has no header row")[m
+[32m+[m
+[32m+[m[32m        pages: list[PageContent] = [][m
+[32m+[m[32m        for index, row in enumerate(rows, start=1):[m
+[32m+[m[32m            parts = [[m
+[32m+[m[32m                f"{column}: {row.get(column)}"[m
+[32m+[m[32m                for column in fieldnames[m
+[32m+[m[32m                if row.get(column) not in (None, "")[m
+[32m+[m[32m            ][m
+[32m+[m[32m            if not parts:[m
+[32m+[m[32m                continue[m
+[32m+[m[32m            pages.append([m
+[32m+[m[32m                PageContent([m
+[32m+[m[32m                    page_number=index,[m
+[32m+[m[32m                    text=", ".join(parts),[m
+[32m+[m[32m                    metadata={[m
+[32m+[m[32m                        "page_number": index,[m
+[32m+[m[32m                        "row": index,[m
+[32m+[m[32m                        "columns": fieldnames,[m
+[32m+[m[32m                    },[m
+[32m+[m[32m                )[m
+[32m+[m[32m            )[m
+[32m+[m[32m        if not pages:[m
+[32m+[m[32m            raise IngestionError(f"CSV {path} contains no data rows")[m
+[32m+[m[32m        logger.debug("Loaded %d rows from %s", len(pages), path)[m
+[32m+[m[32m        return pages[m
+[32m+[m
+[32m+[m
+[32m+[m[32m# --------------------------------------------------------------------- #[m
+[32m+[m[32m# SQL sources[m
+[32m+[m[32m# --------------------------------------------------------------------- #[m
+[32m+[m[32m_SQL_SCHEME = re.compile(r"^([a-z][a-z0-9+.-]*)://", re.IGNORECASE)[m
+[32m+[m
+[32m+[m[32m_REMOTE_DRIVERS: dict[str, str] = {[m
+[32m+[m[32m    "postgres": "psycopg2",[m
+[32m+[m[32m    "postgresql": "psycopg2",[m
+[32m+[m[32m    "mysql": "pymysql",[m
+[32m+[m[32m    "mariadb": "pymysql",[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m_DEFAULT_SQL_QUERY = "SELECT * FROM {table}"[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef _redact_url(url: str) -> str:[m
+[32m+[m[32m    """Return a URL with any embedded credentials removed."""[m
+[32m+[m[32m    match = _SQL_SCHEME.match(url)[m
+[32m+[m[32m    if match is None:[m
+[32m+[m[32m        return url[m
+[32m+[m[32m    remainder = url[match.end() :][m
+[32m+[m[32m    head, separator, _tail = remainder.partition("@")[m
+[32m+[m[32m    if not separator:[m
+[32m+[m[32m        return url[m
+[32m+[m[32m    return f"{match.group(1)}://{_tail}"[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef _url_is_remote(url: str) -> bool:[m
+[32m+[m[32m    return bool(_SQL_SCHEME.match(url))[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef sql_source_label([m
+[32m+[m[32m    source: str,[m
+[32m+[m[32m    *,[m
+[32m+[m[32m    table: str | None = None,[m
+[32m+[m[32m    query: str | None = None,[m
+[32m+[m[32m) -> str:[m
+[32m+[m[32m    """Build a stable, human-readable identity label for a SQL source.[m
+[32m+[m
+[32m+[m[32m    For file sources the label is ``sqlite://<path>``; for remote sources the[m
+[32m+[m[32m    credentials are redacted. Table/query names are appended as a query string.[m
+[32m+[m[32m    """[m
+[32m+[m[32m    label = source[m
+[32m+[m[32m    if _url_is_remote(source):[m
+[32m+[m[32m        label = _redact_url(source)[m
+[32m+[m[32m    elif _SQL_SCHEME.match(source) is None:[m
+[32m+[m[32m        label = f"sqlite://{source}"[m
+[32m+[m[32m    parts: list[str] = [][m
+[32m+[m[32m    if table:[m
+[32m+[m[32m        parts.append(f"table={table}")[m
+[32m+[m[32m    if query:[m
+[32m+[m[32m        parts.append("query=<custom>")[m
+[32m+[m[32m    suffix = "?" + "&".join(parts) if parts else ""[m
+[32m+[m[32m    return f"{label}{suffix}"[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef _quote_ident(identifier: str) -> str:[m
+[32m+[m[32m    """Quote a SQL identifier for safe interpolation into a query."""[m
+[32m+[m[32m    return '"' + identifier.replace('"', '""') + '"'[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass SQLLoader:[m
+[32m+[m[32m    """Loads rows from a SQLite database file or a remote SQL URL.[m
+[32m+[m
+[32m+[m[32m    Args:[m
+[32m+[m[32m        table: Table to read (``SELECT * FROM <table>``).[m
+[32m+[m[32m        query: Raw SQL query. If both are given, ``query`` wins.[m
+[32m+[m[32m        limit: Optional row cap applied to the fetched result.[m
+[32m+[m[32m    """[m
+[32m+[m
+[32m+[m[32m    def __init__([m
+[32m+[m[32m        self,[m
+[32m+[m[32m        *,[m
+[32m+[m[32m        table: str | None = None,[m
+[32m+[m[32m        query: str | None = None,[m
+[32m+[m[32m        limit: int | None = None,[m
+[32m+[m[32m    ) -> None:[m
+[32m+[m[32m        if not table and not query:[m
+[32m+[m[32m            raise IngestionError("A SQL source needs either --table or --query")[m
+[32m+[m[32m        self.table = table[m
+[32m+[m[32m        self.query = query[m
+[32m+[m[32m        self.limit = limit[m
+[32m+[m
+[32m+[m[32m    def load_source(self, source: str) -> list[PageContent]:[m
+[32m+[m[32m        """Fetch rows from ``source`` (a SQLite file path or remote URL)."""[m
+[32m+[m[32m        if _url_is_remote(source):[m
+[32m+[m[32m            rows = self._load_remote(source)[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            rows = self._load_sqlite(Path(source))[m
+[32m+[m[32m        return self._rows_to_pages(rows)[m
+[32m+[m
+[32m+[m[32m    # ------------------------------------------------------------------ #[m
+[32m+[m[32m    def _load_sqlite(self, path: Path) -> tuple[str, list[Any]]:[m
+[32m+[m[32m        if not path.is_file():[m
+[32m+[m[32m            raise IngestionError(f"SQLite database not found: {path}")[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            uri = path.resolve().as_uri()[m
+[32m+[m[32m            connection = sqlite3.connect(f"{uri}?mode=ro", uri=True)[m
+[32m+[m[32m            connection.row_factory = sqlite3.Row[m
+[32m+[m[32m            try:[m
+[32m+[m[32m                statement = self._build_query(str(path))[m
+[32m+[m[32m                cursor = connection.execute(statement)[m
+[32m+[m[32m                fetched = cursor.fetchall()[m
+[32m+[m[32m                if self.limit is not None:[m
+[32m+[m[32m                    fetched = fetched[: self.limit][m
+[32m+[m[32m                columns = [name for name, *_ in cursor.description or ()][m
+[32m+[m[32m                return columns, [list(row) for row in fetched][m
+[32m+[m[32m            finally:[m
+[32m+[m[32m                connection.close()[m
+[32m+[m[32m        except sqlite3.Error as exc:[m
+[32m+[m[32m            raise IngestionError(f"SQLite query failed for {path}: {exc}") from exc[m
+[32m+[m
+[32m+[m[32m    def _load_remote(self, url: str) -> tuple[str, list[Any]]:[m
+[32m+[m[32m        scheme = _SQL_SCHEME.match(url).group(1).lower()[m
+[32m+[m[32m        driver = _REMOTE_DRIVERS.get(scheme)[m
+[32m+[m[32m        if driver is None:[m
+[32m+[m[32m            raise IngestionError([m
+[32m+[m[32m                f"Unsupported SQL URL scheme {scheme!r}; "[m
+[32m+[m[32m                f"supported: {', '.join(sorted(_REMOTE_DRIVERS))}"[m
+[32m+[m[32m            )[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            module = __import__(driver)[m
+[32m+[m[32m        except ImportError:[m
+[32m+[m[32m            raise IngestionError([m
+[32m+[m[32m                f"Remote SQL ingestion for {scheme!r} requires the optional "[m
+[32m+[m[32m                f"driver {driver!r} (e.g. `pip install {driver}`). "[m
+[32m+[m[32m                "SQLite files need no extra dependency."[m
+[32m+[m[32m            ) from None[m
+[32m+[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            connection = module.connect(url)[m
+[32m+[m[32m            try:[m
+[32m+[m[32m                cursor = connection.cursor()[m
+[32m+[m[32m                cursor.execute(self._build_query(url))[m
+[32m+[m[32m                columns = [desc[0] for desc in cursor.description or ()][m
+[32m+[m[32m                fetched = cursor.fetchall()[m
+[32m+[m[32m                if self.limit is not None:[m
+[32m+[m[32m                    fetched = fetched[: self.limit][m
+[32m+[m[32m                return tuple(columns), [list(row) for row in fetched][m
+[32m+[m[32m            finally:[m
+[32m+[m[32m                cursor.close()[m
+[32m+[m[32m                connection.close()[m
+[32m+[m[32m        except Exception as exc:[m
+[32m+[m[32m            raise IngestionError(f"SQL query failed for {url}: {exc}") from exc[m
+[32m+[m
+[32m+[m[32m    # ------------------------------------------------------------------ #[m
+[32m+[m[32m    def _build_query(self, source: str) -> str:[m
+[32m+[m[32m        if self.query:[m
+[32m+[m[32m            return self.query[m
+[32m+[m[32m        statement = _DEFAULT_SQL_QUERY.format(table=_quote_ident(self.table))[m
+[32m+[m[32m        if self.limit is not None:[m
+[32m+[m[32m            statement = f"{statement} LIMIT {self.limit}"[m
+[32m+[m[32m        return statement[m
+[32m+[m
+[32m+[m[32m    def _rows_to_pages(self, data: tuple[str, list[Any]]) -> list[PageContent]:[m
+[32m+[m[32m        columns, rows = data[m
+[32m+[m[32m        pages: list[PageContent] = [][m
+[32m+[m[32m        for index, row in enumerate(rows, start=1):[m
+[32m+[m[32m            parts = [[m
+[32m+[m[32m                f"{column}: {value}"[m
+[32m+[m[32m                for column, value in zip(columns, row, strict=False)[m
+[32m+[m[32m                if value not in (None, "")[m
+[32m+[m[32m            ][m
+[32m+[m[32m            pages.append([m
+[32m+[m[32m                PageContent([m
+[32m+[m[32m                    page_number=index,[m
+[32m+[m[32m                    text=", ".join(parts),[m
+[32m+[m[32m                    metadata={[m
+[32m+[m[32m                        "page_number": index,[m
+[32m+[m[32m                        "row": index,[m
+[32m+[m[32m                        "columns": list(columns),[m
+[32m+[m[32m                    },[m
+[32m+[m[32m                )[m
+[32m+[m[32m            )[m
+[32m+[m[32m        return pages[m
+[32m+[m
+[32m+[m
+ SUPPORTED_SUFFIXES: dict[str, DocumentLoader] = {[m
+     ".pdf": PDFLoader(),[m
+     ".txt": TextLoader(),[m
+     ".md": TextLoader(),[m
+[32m+[m[32m    ".csv": CSVLoader(),[m
+ }[m
+ [m
+ [m
+[1mdiff --git a/src/auto_rag/ingestion/metadata.py b/src/auto_rag/ingestion/metadata.py[m
+[1mindex 0d98fce..834b7f9 100644[m
+[1m--- a/src/auto_rag/ingestion/metadata.py[m
+[1m+++ b/src/auto_rag/ingestion/metadata.py[m
+[36m@@ -124,11 +124,11 @@[m [mclass DocumentMetadata:[m
+         }[m
+ [m
+ [m
+[31m-def _infer_doc_type(text: str) -> DocType:[m
+[32m+[m[32mdef _infer_doc_type(text: str) -> DocType | None:[m
+     for pattern, doc_type in _DOC_TYPE_PATTERNS:[m
+         if pattern.search(text):[m
+             return doc_type[m
+[31m-    return DOCUMENT_TYPE_SERVICE_MANUAL[m
+[32m+[m[32m    return None[m
+ [m
+ [m
+ def _find_make(text: str) -> str | None:[m
+[36m@@ -176,6 +176,7 @@[m [mclass MetadataExtractor:[m
+         path: Path,[m
+         pages: list[PageContent],[m
+         doc_type: DocType | None = None,[m
+[32m+[m[32m        fallback_type: DocType = DOCUMENT_TYPE_SERVICE_MANUAL,[m
+     ) -> DocumentMetadata:[m
+         """Extract metadata combining filename hints and leading pages.[m
+ [m
+[36m@@ -183,13 +184,15 @@[m [mclass MetadataExtractor:[m
+             path: Source file path (filename contributes strong hints).[m
+             pages: Loaded pages (leading pages scanned for content hints).[m
+             doc_type: Explicit document type override.[m
+[32m+[m[32m            fallback_type: Type used when nothing is detected (tabulated data[m
+[32m+[m[32m                such as CSV/SQL defaults to ``tabular``).[m
+         """[m
+         filename = path.stem.replace("_", " ").replace("-", " ").replace(".", " ")[m
+         hints = " ".join(page.text for page in pages[: self.source_hints])[m
+         haystack = f"{filename}\n{hints}"[m
+ [m
+         title = _clean_title(path.stem)[m
+[31m-        inferred_type = doc_type or _infer_doc_type(f"{filename} {hints}")[m
+[32m+[m[32m        inferred_type = doc_type or _infer_doc_type(f"{filename} {hints}") or fallback_type[m
+         make = _find_make(haystack)[m
+         model = _find_model(haystack, make)[m
+         year = _find_year(haystack)[m
+[1mdiff --git a/src/auto_rag/ingestion/pipeline.py b/src/auto_rag/ingestion/pipeline.py[m
+[1mindex 0f59f28..7294fef 100644[m
+[1m--- a/src/auto_rag/ingestion/pipeline.py[m
+[1m+++ b/src/auto_rag/ingestion/pipeline.py[m
+[36m@@ -1,8 +1,8 @@[m
+ """Ingestion pipeline.[m
+ [m
+ Orchestrates the full load -> clean -> metadata -> chunk -> embed -> index[m
+[31m-flow for a file or directory, tracking every document in SQLite and[m
+[31m-deduplicating by content hash.[m
+[32m+[m[32mflow for files (PDF, text, CSV) and SQL sources (SQLite files or remote SQL[m
+[32m+[m[32mURLs), tracking every source in SQLite and deduplicating by content hash.[m
+ """[m
+ [m
+ from __future__ import annotations[m
+[36m@@ -12,13 +12,19 @@[m [mimport logging[m
+ from dataclasses import dataclass, field[m
+ from pathlib import Path[m
+ [m
+[32m+[m[32mfrom auto_rag.constants import DOCUMENT_TYPE_SERVICE_MANUAL, DOCUMENT_TYPE_TABULAR[m
+ from auto_rag.db.connection import Database[m
+ from auto_rag.db.models import DocType, DocumentRecord[m
+ from auto_rag.db.repositories import DocumentRepository[m
+ from auto_rag.errors import IngestionError[m
+ from auto_rag.ingestion.chunking import Chunker[m
+ from auto_rag.ingestion.cleaning import clean_text[m
+[31m-from auto_rag.ingestion.loaders import PageContent, loader_for[m
+[32m+[m[32mfrom auto_rag.ingestion.loaders import ([m
+[32m+[m[32m    PageContent,[m
+[32m+[m[32m    SQLLoader,[m
+[32m+[m[32m    loader_for,[m
+[32m+[m[32m    sql_source_label,[m
+[32m+[m[32m)[m
+ from auto_rag.ingestion.metadata import DocumentMetadata, MetadataExtractor[m
+ from auto_rag.ingestion.vectorstore import VectorStore[m
+ [m
+[36m@@ -76,7 +82,7 @@[m [mclass IngestionPipeline:[m
+         """Ingest a single file.[m
+ [m
+         Args:[m
+[31m-            path: PDF or text file to ingest.[m
+[32m+[m[32m            path: PDF, text, or CSV file to ingest.[m
+             doc_type: Optional explicit document type.[m
+             force: Re-index even if the file was already indexed.[m
+ [m
+[36m@@ -85,6 +91,7 @@[m [mclass IngestionPipeline:[m
+         """[m
+         path = Path(path)[m
+         file_hash = sha256_file(path)[m
+[32m+[m[32m        fallback_type = _fallback_type_for(path)[m
+ [m
+         existing = self.documents.get_by_hash(file_hash)[m
+         if existing and existing.status == "indexed" and not force:[m
+[36m@@ -99,14 +106,14 @@[m [mclass IngestionPipeline:[m
+                 record = DocumentRecord([m
+                     source_path=str(path),[m
+                     file_hash=file_hash,[m
+[31m-                    doc_type=doc_type or "service_manual",[m
+[32m+[m[32m                    doc_type=doc_type or fallback_type or "service_manual",[m
+                     title=path.stem,[m
+                 )[m
+                 document_id = self.documents.add(record)[m
+             else:[m
+                 document_id = existing.id[m
+                 self.documents.update_status(document_id, "pending")[m
+[31m-            return self._process(path, doc_type, document_id)[m
+[32m+[m[32m            return self._process(path, doc_type, document_id, fallback_type)[m
+         except IngestionError as exc:[m
+             logger.exception("Ingestion failed for %s", path)[m
+             if document_id is not None:[m
+[36m@@ -115,6 +122,89 @@[m [mclass IngestionPipeline:[m
+                 path=str(path), status="failed", document_id=document_id, error=str(exc)[m
+             )[m
+ [m
+[32m+[m[32m    def ingest_csv([m
+[32m+[m[32m        self,[m
+[32m+[m[32m        path: Path,[m
+[32m+[m[32m        doc_type: DocType | None = None,[m
+[32m+[m[32m        force: bool = False,[m
+[32m+[m[32m    ) -> IngestResult:[m
+[32m+[m[32m        """Ingest a single CSV file (rows become individual chunks)."""[m
+[32m+[m[32m        path = Path(path)[m
+[32m+[m[32m        if path.suffix.lower() != ".csv":[m
+[32m+[m[32m            raise IngestionError(f"Not a CSV file: {path}")[m
+[32m+[m[32m        return self.ingest_path(path, doc_type=doc_type, force=force)[m
+[32m+[m
+[32m+[m[32m    def ingest_sql([m
+[32m+[m[32m        self,[m
+[32m+[m[32m        source: str | Path,[m
+[32m+[m[32m        *,[m
+[32m+[m[32m        table: str | None = None,[m
+[32m+[m[32m        query: str | None = None,[m
+[32m+[m[32m        limit: int | None = None,[m
+[32m+[m[32m        force: bool = False,[m
+[32m+[m[32m    ) -> IngestResult:[m
+[32m+[m[32m        """Ingest rows from a SQL source as a one-shot snapshot.[m
+[32m+[m
+[32m+[m[32m        Args:[m
+[32m+[m[32m            source: A SQLite database file path or a remote SQL connection URL[m
+[32m+[m[32m                (``postgresql://...``, ``mysql://...``). Credentials in the[m
+[32m+[m[32m                source label are redacted.[m
+[32m+[m[32m            table: Table to read (``SELECT * FROM <table>``).[m
+[32m+[m[32m            query: Raw SQL query. If both are given, ``query`` wins.[m
+[32m+[m[32m            limit: Optional cap on the number of rows ingested.[m
+[32m+[m[32m            force: Re-index even if this source was already ingested.[m
+[32m+[m
+[32m+[m[32m        Returns:[m
+[32m+[m[32m            An :class:`IngestResult` describing the outcome.[m
+[32m+[m[32m        """[m
+[32m+[m[32m        source_str = str(source)[m
+[32m+[m[32m        loader = SQLLoader(table=table, query=query, limit=limit)[m
+[32m+[m[32m        pages = loader.load_source(source_str)[m
+[32m+[m[32m        if not pages:[m
+[32m+[m[32m            raise IngestionError(f"No rows returned from SQL source {source_str}")[m
+[32m+[m
+[32m+[m[32m        fingerprint = _sql_fingerprint(source_str, table, query, pages)[m
+[32m+[m[32m        label = sql_source_label(source_str, table=table, query=query)[m
+[32m+[m[32m        title = table or "sql source"[m
+[32m+[m[32m        label_path = Path(title)[m
+[32m+[m
+[32m+[m[32m        existing = self.documents.get_by_hash(fingerprint)[m
+[32m+[m[32m        if existing and existing.status == "indexed" and not force:[m
+[32m+[m[32m            logger.info("Skipping already indexed SQL source %s", label)[m
+[32m+[m[32m            return IngestResult([m
+[32m+[m[32m                path=label, status="skipped", document_id=existing.id[m
+[32m+[m[32m            )[m
+[32m+[m
+[32m+[m[32m        document_id: int | None = None[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            if existing is None:[m
+[32m+[m[32m                record = DocumentRecord([m
+[32m+[m[32m                    source_path=label,[m
+[32m+[m[32m                    file_hash=fingerprint,[m
+[32m+[m[32m                    doc_type="tabular",[m
+[32m+[m[32m                    title=title,[m
+[32m+[m[32m                )[m
+[32m+[m[32m                document_id = self.documents.add(record)[m
+[32m+[m[32m            else:[m
+[32m+[m[32m                document_id = existing.id[m
+[32m+[m[32m                self.documents.update_status(document_id, "pending")[m
+[32m+[m[32m            return self._index_pages([m
+[32m+[m[32m                pages=pages,[m
+[32m+[m[32m                label_path=label_path,[m
+[32m+[m[32m                source=label,[m
+[32m+[m[32m                doc_type=None,[m
+[32m+[m[32m                fallback_type=DOCUMENT_TYPE_TABULAR,[m
+[32m+[m[32m                document_id=document_id,[m
+[32m+[m[32m                display_path=label,[m
+[32m+[m[32m            )[m
+[32m+[m[32m        except IngestionError as exc:[m
+[32m+[m[32m            logger.exception("Ingestion failed for SQL source %s", label)[m
+[32m+[m[32m            if document_id is not None:[m
+[32m+[m[32m                self.documents.update_status(document_id, "failed", error=str(exc))[m
+[32m+[m[32m            return IngestResult([m
+[32m+[m[32m                path=label, status="failed", document_id=document_id, error=str(exc)[m
+[32m+[m[32m            )[m
+[32m+[m
+     def ingest_directory([m
+         self,[m
+         directory: Path,[m
+[36m@@ -138,17 +228,50 @@[m [mclass IngestionPipeline:[m
+         return results[m
+ [m
+     # ------------------------------------------------------------------ #[m
+[31m-    def _process(self, path: Path, doc_type: DocType | None, document_id: int) -> IngestResult:[m
+[32m+[m[32m    def _process([m
+[32m+[m[32m        self,[m
+[32m+[m[32m        path: Path,[m
+[32m+[m[32m        doc_type: DocType | None,[m
+[32m+[m[32m        document_id: int,[m
+[32m+[m[32m        fallback_type: DocType | None = None,[m
+[32m+[m[32m    ) -> IngestResult:[m
+         loader = loader_for(path)[m
+         pages = loader.load(path)[m
+[32m+[m[32m        return self._index_pages([m
+[32m+[m[32m            pages=pages,[m
+[32m+[m[32m            label_path=path,[m
+[32m+[m[32m            source=str(path),[m
+[32m+[m[32m            doc_type=doc_type,[m
+[32m+[m[32m            fallback_type=fallback_type,[m
+[32m+[m[32m            document_id=document_id,[m
+[32m+[m[32m            display_path=str(path),[m
+[32m+[m[32m        )[m
+[32m+[m
+[32m+[m[32m    def _index_pages([m
+[32m+[m[32m        self,[m
+[32m+[m[32m        *,[m
+[32m+[m[32m        pages: list[PageContent],[m
+[32m+[m[32m        label_path: Path,[m
+[32m+[m[32m        source: str,[m
+[32m+[m[32m        doc_type: DocType | None,[m
+[32m+[m[32m        fallback_type: DocType | None,[m
+[32m+[m[32m        document_id: int,[m
+[32m+[m[32m        display_path: str,[m
+[32m+[m[32m    ) -> IngestResult:[m
+[32m+[m[32m        """Clean, chunk, embed, and index already-loaded pages."""[m
+         if not pages:[m
+[31m-            raise IngestionError(f"No extractable content in {path}")[m
+[32m+[m[32m            raise IngestionError(f"No extractable content in {display_path}")[m
+ [m
+         cleaned = _clean_pages(pages)[m
+[31m-        metadata: DocumentMetadata = self.extractor.extract(path, cleaned, doc_type)[m
+[32m+[m[32m        metadata: DocumentMetadata = self.extractor.extract([m
+[32m+[m[32m            label_path,[m
+[32m+[m[32m            cleaned,[m
+[32m+[m[32m            doc_type,[m
+[32m+[m[32m            fallback_type=fallback_type or DOCUMENT_TYPE_SERVICE_MANUAL,[m
+[32m+[m[32m        )[m
+         chunks = self.chunker.chunk_pages(cleaned, metadata.to_dict())[m
+ [m
+[31m-        self.vector_store.add_chunks(chunks, source=str(path))[m
+[32m+[m[32m        self.vector_store.add_chunks(chunks, source=source)[m
+         self.documents.update_metadata([m
+             document_id,[m
+             doc_type=metadata.doc_type,[m
+[36m@@ -166,14 +289,14 @@[m [mclass IngestionPipeline:[m
+             chunk_count=len(chunks),[m
+         )[m
+         logger.info([m
+[31m-            "Indexed %s: %d chunks, %d pages (type=%s)",[m
+[31m-            path.name,[m
+[32m+[m[32m            "Indexed %s: %d chunks, %d rows/pages (type=%s)",[m
+[32m+[m[32m            display_path,[m
+             len(chunks),[m
+             len(cleaned),[m
+             metadata.doc_type,[m
+         )[m
+         return IngestResult([m
+[31m-            path=str(path),[m
+[32m+[m[32m            path=display_path,[m
+             status="indexed",[m
+             document_id=document_id,[m
+             chunk_count=len(chunks),[m
+[36m@@ -181,6 +304,25 @@[m [mclass IngestionPipeline:[m
+         )[m
+ [m
+ [m
+[32m+[m[32mdef _fallback_type_for(path: Path) -> DocType | None:[m
+[32m+[m[32m    """Return the default doc type for a file's suffix (or None)."""[m
+[32m+[m[32m    if path.suffix.lower() == ".csv":[m
+[32m+[m[32m        return DOCUMENT_TYPE_TABULAR[m
+[32m+[m[32m    return None[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef _sql_fingerprint([m
+[32m+[m[32m    source: str,[m
+[32m+[m[32m    table: str | None,[m
+[32m+[m[32m    query: str | None,[m
+[32m+[m[32m    pages: list[PageContent],[m
+[32m+[m[32m) -> str:[m
+[32m+[m[32m    """Content hash for a SQL snapshot: query identity + every row's text."""[m
+[32m+[m[32m    statement = query or table or ""[m
+[32m+[m[32m    payload = f"{source}|{statement}\n" + "\n".join(page.text for page in pages)[m
+[32m+[m[32m    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[m
+[32m+[m
+[32m+[m
+ def _clean_pages(pages: list[PageContent]) -> list[PageContent]:[m
+     """Clean page text and drop pages with no remaining content."""[m
+     cleaned: list[PageContent] = [][m
+[1mdiff --git a/src/auto_rag/rag/citations.py b/src/auto_rag/rag/citations.py[m
+[1mindex a17aae7..b3448a8 100644[m
+[1m--- a/src/auto_rag/rag/citations.py[m
+[1m+++ b/src/auto_rag/rag/citations.py[m
+[36m@@ -8,6 +8,7 @@[m [msources inline; the same numbering is preserved in the returned[m
+ from __future__ import annotations[m
+ [m
+ import logging[m
+[32m+[m[32mimport re[m
+ from pathlib import Path[m
+ [m
+ from auto_rag.rag.models import Citation[m
+[36m@@ -19,6 +20,7 @@[m [m__all__ = ["build_citations", "format_context", "format_citations"][m
+ [m
+ _SNIPPET_MAX_CHARS: int = 300[m
+ _SNIPPET_ELLIPSIS: str = "…"[m
+[32m+[m[32m_URL_SCHEME: re.Pattern[str] = re.compile(r"^([a-z][a-z0-9+.-]*)://")[m
+ [m
+ [m
+ def _chunk_source(chunk: RetrievedChunk) -> str:[m
+[36m@@ -26,6 +28,27 @@[m [mdef _chunk_source(chunk: RetrievedChunk) -> str:[m
+     return chunk.source or chunk.metadata.get("source", "")[m
+ [m
+ [m
+[32m+[m[32mdef _source_label(source: str) -> str:[m
+[32m+[m[32m    """Render a chunk source as a short, readable label.[m
+[32m+[m
+[32m+[m[32m    File paths yield their basename. URL sources (``sqlite://...``,[m
+[32m+[m[32m    ``postgres://...``) yield the basename of the path plus any query string,[m
+[32m+[m[32m    with credentials stripped.[m
+[32m+[m[32m    """[m
+[32m+[m[32m    if not source:[m
+[32m+[m[32m        return "unknown"[m
+[32m+[m[32m    match = _URL_SCHEME.match(source)[m
+[32m+[m[32m    if match is None:[m
+[32m+[m[32m        return Path(source).name[m
+[32m+[m[32m    rest = source[match.end() :][m
+[32m+[m[32m    if "@" in rest:[m
+[32m+[m[32m        rest = rest.split("@", 1)[1][m
+[32m+[m[32m    base, separator, query = rest.partition("?")[m
+[32m+[m[32m    name = Path(base).name or base[m
+[32m+[m[32m    suffix = f"?{query}" if separator else ""[m
+[32m+[m[32m    return f"{name}{suffix}"[m
+[32m+[m
+[32m+[m
+ def build_citations(chunks: list[RetrievedChunk]) -> list[Citation]:[m
+     """Map ranked chunks onto numbered, deduplicated citations."""[m
+     citations: list[Citation] = [][m
+[36m@@ -62,7 +85,7 @@[m [mdef format_context(chunks: list[RetrievedChunk]) -> str:[m
+         return ""[m
+     parts: list[str] = [][m
+     for index, chunk in enumerate(chunks, start=1):[m
+[31m-        source = Path(_chunk_source(chunk)).name if _chunk_source(chunk) else "unknown"[m
+[32m+[m[32m        source = _source_label(_chunk_source(chunk))[m
+         page = f", page {chunk.page}" if chunk.page is not None else ""[m
+         parts.append(f"[{index}] ({source}{page}) {chunk.text}")[m
+     return "\n\n".join(parts)[m
+[36m@@ -74,7 +97,7 @@[m [mdef format_citations(citations: list[Citation]) -> str:[m
+         return ""[m
+     lines: list[str] = [][m
+     for citation in citations:[m
+[31m-        source = Path(citation.source).name if citation.source else "unknown"[m
+[32m+[m[32m        source = _source_label(citation.source)[m
+         page = f"p{citation.page}" if citation.page is not None else ""[m
+         vehicle = " ".join([m
+             part for part in (citation.make, citation.model) if part[m
+[1mdiff --git a/src/auto_rag/retrieval/cli.py b/src/auto_rag/retrieval/cli.py[m
+[1mindex cc1ff24..e97372c 100644[m
+[1m--- a/src/auto_rag/retrieval/cli.py[m
+[1m+++ b/src/auto_rag/retrieval/cli.py[m
+[36m@@ -37,7 +37,7 @@[m [mdef build_parser() -> argparse.ArgumentParser:[m
+     parser.add_argument("--year", type=int, default=None, help="Filter by model year.")[m
+     parser.add_argument([m
+         "--doc-type",[m
+[31m-        choices=["service_manual", "repair_manual", "dtc", "tsb", "wiring_diagram"],[m
+[32m+[m[32m        choices=["service_manual", "repair_manual", "dtc", "tsb", "wiring_diagram", "tabular"],[m
+         default=None,[m
+         help="Filter by document type.",[m
+     )[m
+[1mdiff --git a/tests/test_loaders.py b/tests/test_loaders.py[m
+[1mindex 3be202f..c4158e1 100644[m
+[1m--- a/tests/test_loaders.py[m
+[1m+++ b/tests/test_loaders.py[m
+[36m@@ -2,12 +2,23 @@[m
+ [m
+ from __future__ import annotations[m
+ [m
+[32m+[m[32mimport sqlite3[m
+ from pathlib import Path[m
+[32m+[m[32mfrom types import SimpleNamespace[m
+ [m
+ import pytest[m
+ [m
+[32m+[m[32mimport auto_rag.ingestion.loaders as loaders[m
+ from auto_rag.errors import IngestionError[m
+[31m-from auto_rag.ingestion.loaders import PDFLoader, TextLoader, loader_for[m
+[32m+[m[32mfrom auto_rag.ingestion.loaders import ([m
+[32m+[m[32m    CSVLoader,[m
+[32m+[m[32m    PDFLoader,[m
+[32m+[m[32m    SQLLoader,[m
+[32m+[m[32m    TextLoader,[m
+[32m+[m[32m    _redact_url,[m
+[32m+[m[32m    loader_for,[m
+[32m+[m[32m    sql_source_label,[m
+[32m+[m[32m)[m
+ [m
+ [m
+ def test_pdf_loader_extracts_pages(make_pdf) -> None:[m
+[36m@@ -41,8 +52,198 @@[m [mdef test_loader_for_dispatches_on_suffix(tmp_path: Path) -> None:[m
+     assert isinstance(loader_for(Path("a.pdf")), PDFLoader)[m
+     assert isinstance(loader_for(Path("b.txt")), TextLoader)[m
+     assert isinstance(loader_for(Path("c.md")), TextLoader)[m
+[32m+[m[32m    assert isinstance(loader_for(Path("d.csv")), CSVLoader)[m
+ [m
+ [m
+ def test_loader_for_unsupported_suffix(tmp_path: Path) -> None:[m
+     with pytest.raises(IngestionError):[m
+         loader_for(Path("archive.zip"))[m
+[32m+[m
+[32m+[m
+[32m+[m[32m# --------------------------------------------------------------------- #[m
+[32m+[m[32m# CSV loader[m
+[32m+[m[32m# --------------------------------------------------------------------- #[m
+[32m+[m[32mdef _write_csv(tmp_path: Path, content: str, name: str = "parts.csv") -> Path:[m
+[32m+[m[32m    path = tmp_path / name[m
+[32m+[m[32m    path.write_text(content, encoding="utf-8")[m
+[32m+[m[32m    return path[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_csv_loader_rows_become_pages(tmp_path: Path) -> None:[m
+[32m+[m[32m    path = _write_csv([m
+[32m+[m[32m        tmp_path,[m
+[32m+[m[32m        "part_number,name,unit_price\n"[m
+[32m+[m[32m        "BP-101,Brake pads,45.50\n"[m
+[32m+[m[32m        "OF-202,Oil filter,8.25\n",[m
+[32m+[m[32m    )[m
+[32m+[m[32m    pages = CSVLoader().load(path)[m
+[32m+[m[32m    assert len(pages) == 2[m
+[32m+[m[32m    assert pages[0].page_number == 1[m
+[32m+[m[32m    assert "part_number: BP-101" in pages[0].text[m
+[32m+[m[32m    assert "name: Brake pads" in pages[0].text[m
+[32m+[m[32m    assert pages[0].metadata["columns"] == ["part_number", "name", "unit_price"][m
+[32m+[m[32m    assert pages[1].text.startswith("part_number: OF-202")[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_csv_loader_handles_bom_and_quoting(tmp_path: Path) -> None:[m
+[32m+[m[32m    path = tmp_path / "codes.csv"[m
+[32m+[m[32m    path.write_bytes(b"\xef\xbb\xbfcode,description\n" b'"P0300","Random misfire, multiple cylinders"\n')[m
+[32m+[m[32m    pages = CSVLoader().load(path)[m
+[32m+[m[32m    assert len(pages) == 1[m
+[32m+[m[32m    assert "Random misfire, multiple cylinders" in pages[0].text[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_csv_loader_missing_header_raises(tmp_path: Path) -> None:[m
+[32m+[m[32m    path = _write_csv(tmp_path, "")[m
+[32m+[m[32m    with pytest.raises(IngestionError, match="no header"):[m
+[32m+[m[32m        CSVLoader().load(path)[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_csv_loader_empty_rows_raise(tmp_path: Path) -> None:[m
+[32m+[m[32m    path = _write_csv(tmp_path, "a,b\n")[m
+[32m+[m[32m    with pytest.raises(IngestionError, match="no data rows"):[m
+[32m+[m[32m        CSVLoader().load(path)[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_csv_loader_non_utf8_raises(tmp_path: Path) -> None:[m
+[32m+[m[32m    path = tmp_path / "bad.csv"[m
+[32m+[m[32m    path.write_bytes(b"\xff\xfe\x00broken")[m
+[32m+[m[32m    with pytest.raises(IngestionError, match="not valid UTF-8"):[m
+[32m+[m[32m        CSVLoader().load(path)[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_csv_loader_skips_empty_cells(tmp_path: Path) -> None:[m
+[32m+[m[32m    path = _write_csv(tmp_path, "a,b\n1,\n")[m
+[32m+[m[32m    pages = CSVLoader().load(path)[m
+[32m+[m[32m    assert pages[0].text == "a: 1"[m
+[32m+[m
+[32m+[m
+[32m+[m[32m# --------------------------------------------------------------------- #[m
+[32m+[m[32m# SQL sources[m
+[32m+[m[32m# --------------------------------------------------------------------- #[m
+[32m+[m[32mdef _make_sqlite(tmp_path: Path, name: str = "workshop.db") -> Path:[m
+[32m+[m[32m    path = tmp_path / name[m
+[32m+[m[32m    conn = sqlite3.connect(path)[m
+[32m+[m[32m    conn.execute([m
+[32m+[m[32m        "CREATE TABLE parts (part_number TEXT, name TEXT, unit_price REAL)"[m
+[32m+[m[32m    )[m
+[32m+[m[32m    conn.executemany([m
+[32m+[m[32m        "INSERT INTO parts VALUES (?, ?, ?)",[m
+[32m+[m[32m        [("BP-101", "Brake pads", 45.5), ("OF-202", "Oil filter", 8.25)],[m
+[32m+[m[32m    )[m
+[32m+[m[32m    conn.commit()[m
+[32m+[m[32m    conn.close()[m
+[32m+[m[32m    return path[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_sql_loader_table_select(tmp_path: Path) -> None:[m
+[32m+[m[32m    path = _make_sqlite(tmp_path)[m
+[32m+[m[32m    pages = SQLLoader(table="parts").load_source(str(path))[m
+[32m+[m[32m    assert len(pages) == 2[m
+[32m+[m[32m    assert "part_number: BP-101" in pages[0].text[m
+[32m+[m[32m    assert pages[0].metadata["columns"] == ["part_number", "name", "unit_price"][m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_sql_loader_custom_query(tmp_path: Path) -> None:[m
+[32m+[m[32m    path = _make_sqlite(tmp_path)[m
+[32m+[m[32m    pages = SQLLoader(query="SELECT name, unit_price FROM parts").load_source(str(path))[m
+[32m+[m[32m    assert len(pages) == 2[m
+[32m+[m[32m    assert "name: Oil filter" in pages[1].text[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_sql_loader_limit(tmp_path: Path) -> None:[m
+[32m+[m[32m    path = _make_sqlite(tmp_path)[m
+[32m+[m[32m    pages = SQLLoader(table="parts", limit=1).load_source(str(path))[m
+[32m+[m[32m    assert len(pages) == 1[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_sql_loader_missing_file_raises(tmp_path: Path) -> None:[m
+[32m+[m[32m    with pytest.raises(IngestionError, match="not found"):[m
+[32m+[m[32m        SQLLoader(table="parts").load_source(str(tmp_path / "nope.db"))[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_sql_loader_requires_table_or_query() -> None:[m
+[32m+[m[32m    with pytest.raises(IngestionError, match="--table or --query"):[m
+[32m+[m[32m        SQLLoader()[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_sql_loader_bad_table_raises(tmp_path: Path) -> None:[m
+[32m+[m[32m    path = _make_sqlite(tmp_path)[m
+[32m+[m[32m    with pytest.raises(IngestionError, match="no such table"):[m
+[32m+[m[32m        SQLLoader(table="missing").load_source(str(path))[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_sql_loader_remote_missing_driver(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:[m
+[32m+[m[32m    def fake_import(name, *args, **kwargs):[m
+[32m+[m[32m        raise ImportError(name)[m
+[32m+[m
+[32m+[m[32m    monkeypatch.setattr(loaders, "__import__", fake_import, raising=False)[m
+[32m+[m[32m    with pytest.raises(IngestionError, match="psycopg2"):[m
+[32m+[m[32m        SQLLoader(table="parts").load_source("postgresql://user:pass@host/db")[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_sql_loader_remote_uses_driver(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:[m
+[32m+[m[32m    class _Cursor:[m
+[32m+[m[32m        def __init__(self, rows):[m
+[32m+[m[32m            self._rows = rows[m
+[32m+[m[32m            self.description = [("code",), ("severity",)][m
+[32m+[m
+[32m+[m[32m        def execute(self, sql):[m
+[32m+[m[32m            pass[m
+[32m+[m
+[32m+[m[32m        def fetchall(self):[m
+[32m+[m[32m            return self._rows[m
+[32m+[m
+[32m+[m[32m        def close(self):[m
+[32m+[m[32m            pass[m
+[32m+[m
+[32m+[m[32m    class _Connection:[m
+[32m+[m[32m        def __init__(self, rows):[m
+[32m+[m[32m            self._rows = rows[m
+[32m+[m
+[32m+[m[32m        def cursor(self):[m
+[32m+[m[32m            return _Cursor(self._rows)[m
+[32m+[m
+[32m+[m[32m        def close(self):[m
+[32m+[m[32m            pass[m
+[32m+[m
+[32m+[m[32m    calls: list[str] = [][m
+[32m+[m
+[32m+[m[32m    def fake_connect(url):[m
+[32m+[m[32m        calls.append(url)[m
+[32m+[m[32m        return _Connection([("P0300", "high")])[m
+[32m+[m
+[32m+[m[32m    def fake_import(name, *args, **kwargs):[m
+[32m+[m[32m        return SimpleNamespace(connect=fake_connect)[m
+[32m+[m
+[32m+[m[32m    monkeypatch.setattr(loaders, "__import__", fake_import, raising=False)[m
+[32m+[m[32m    pages = SQLLoader(table="dtc_codes").load_source("mysql://user:pass@host/db")[m
+[32m+[m[32m    assert len(pages) == 1[m
+[32m+[m[32m    assert "code: P0300" in pages[0].text[m
+[32m+[m[32m    assert "severity: high" in pages[0].text[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_sql_loader_unsupported_scheme() -> None:[m
+[32m+[m[32m    with pytest.raises(IngestionError, match="Unsupported SQL URL scheme"):[m
+[32m+[m[32m        SQLLoader(table="x").load_source("oracle://host/db")[m
+[32m+[m
+[32m+[m
+[32m+[m[32m# --------------------------------------------------------------------- #[m
+[32m+[m[32m# Source labels[m
+[32m+[m[32m# --------------------------------------------------------------------- #[m
+[32m+[m[32mdef test_sql_source_label_for_file() -> None:[m
+[32m+[m[32m    label = sql_source_label(r"C:\data\parts.db", table="parts")[m
+[32m+[m[32m    assert label.startswith("sqlite://C:\\data\\parts.db")[m
+[32m+[m[32m    assert "?table=parts" in label[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_sql_source_label_redacts_credentials() -> None:[m
+[32m+[m[32m    label = sql_source_label("postgresql://user:secret@host:5432/db", table="vehicles")[m
+[32m+[m[32m    assert "secret" not in label[m
+[32m+[m[32m    assert label.startswith("postgresql://")[m
+[32m+[m[32m    assert "?table=vehicles" in label[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_redact_url() -> None:[m
+[32m+[m[32m    assert _redact_url("postgres://u:p@h/db") == "postgres://h/db"[m
+[32m+[m[32m    assert _redact_url("plain path") == "plain path"[m
+[1mdiff --git a/tests/test_pipeline.py b/tests/test_pipeline.py[m
+[1mindex 8c4cf8d..0e5d7a3 100644[m
+[1m--- a/tests/test_pipeline.py[m
+[1m+++ b/tests/test_pipeline.py[m
+[36m@@ -2,6 +2,11 @@[m
+ [m
+ from __future__ import annotations[m
+ [m
+[32m+[m[32mimport sqlite3[m
+[32m+[m[32mfrom pathlib import Path[m
+[32m+[m
+[32m+[m[32mimport pytest[m
+[32m+[m
+ from auto_rag.db.connection import Database[m
+ from auto_rag.db.repositories import DocumentRepository[m
+ from auto_rag.ingestion.chunking import Chunker[m
+[36m@@ -98,3 +103,126 @@[m [mdef test_retrieval_roundtrip_after_ingestion([m
+     assert hits[m
+     assert "brake" in hits[0]["text"].lower()[m
+     assert hits[0]["metadata"]["make"] == "Toyota"[m
+[32m+[m
+[32m+[m
+[32m+[m[32m# --------------------------------------------------------------------- #[m
+[32m+[m[32m# CSV ingestion[m
+[32m+[m[32m# --------------------------------------------------------------------- #[m
+[32m+[m[32mdef _write_csv(tmp_path: Path) -> Path:[m
+[32m+[m[32m    path = tmp_path / "parts.csv"[m
+[32m+[m[32m    path.write_text([m
+[32m+[m[32m        "part_number,name,unit_price\n"[m
+[32m+[m[32m        "BP-101,Brake pads,45.50\n"[m
+[32m+[m[32m        "OF-202,Oil filter,8.25\n",[m
+[32m+[m[32m        encoding="utf-8",[m
+[32m+[m[32m    )[m
+[32m+[m[32m    return path[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_ingest_csv_end_to_end(db: Database, vector_store: VectorStore, tmp_path: Path) -> None:[m
+[32m+[m[32m    result = _pipeline(db, vector_store).ingest_csv(_write_csv(tmp_path))[m
+[32m+[m[32m    assert result.status == "indexed"[m
+[32m+[m[32m    assert result.chunk_count == 2[m
+[32m+[m[32m    assert result.metadata["doc_type"] == "tabular"[m
+[32m+[m
+[32m+[m[32m    record = DocumentRepository(db).get_by_id(result.document_id)[m
+[32m+[m[32m    assert record is not None[m
+[32m+[m[32m    assert record.status == "indexed"[m
+[32m+[m[32m    assert record.doc_type == "tabular"[m
+[32m+[m[32m    assert record.page_count == 2[m
+[32m+[m[32m    assert vector_store.count() == 2[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_ingest_csv_skips_on_repeat(db: Database, vector_store: VectorStore, tmp_path: Path) -> None:[m
+[32m+[m[32m    pipeline = _pipeline(db, vector_store)[m
+[32m+[m[32m    path = _write_csv(tmp_path)[m
+[32m+[m[32m    first = pipeline.ingest_csv(path)[m
+[32m+[m[32m    second = pipeline.ingest_csv(path)[m
+[32m+[m[32m    assert first.status == "indexed"[m
+[32m+[m[32m    assert second.status == "skipped"[m
+[32m+[m[32m    assert vector_store.count() == first.chunk_count[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_ingest_csv_force_reindexes(db: Database, vector_store: VectorStore, tmp_path: Path) -> None:[m
+[32m+[m[32m    pipeline = _pipeline(db, vector_store)[m
+[32m+[m[32m    path = _write_csv(tmp_path)[m
+[32m+[m[32m    first = pipeline.ingest_csv(path)[m
+[32m+[m[32m    second = pipeline.ingest_csv(path, force=True)[m
+[32m+[m[32m    assert first.status == "indexed"[m
+[32m+[m[32m    assert second.status == "indexed"[m
+[32m+[m[32m    assert vector_store.count() == first.chunk_count[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_ingest_csv_non_csv_rejected(db: Database, vector_store: VectorStore, tmp_path: Path) -> None:[m
+[32m+[m[32m    path = tmp_path / "notes.txt"[m
+[32m+[m[32m    path.write_text("not a csv", encoding="utf-8")[m
+[32m+[m[32m    with pytest.raises(Exception):[m
+[32m+[m[32m        _pipeline(db, vector_store).ingest_csv(path)[m
+[32m+[m
+[32m+[m
+[32m+[m[32m# --------------------------------------------------------------------- #[m
+[32m+[m[32m# SQL ingestion[m
+[32m+[m[32m# --------------------------------------------------------------------- #[m
+[32m+[m[32mdef _write_sqlite(tmp_path: Path) -> Path:[m
+[32m+[m[32m    path = tmp_path / "workshop.db"[m
+[32m+[m[32m    conn = sqlite3.connect(path)[m
+[32m+[m[32m    conn.execute("CREATE TABLE parts (part_number TEXT, name TEXT, unit_price REAL)")[m
+[32m+[m[32m    conn.executemany([m
+[32m+[m[32m        "INSERT INTO parts VALUES (?, ?, ?)",[m
+[32m+[m[32m        [("BP-101", "Brake pads", 45.5), ("OF-202", "Oil filter", 8.25)],[m
+[32m+[m[32m    )[m
+[32m+[m[32m    conn.commit()[m
+[32m+[m[32m    conn.close()[m
+[32m+[m[32m    return path[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_ingest_sql_end_to_end(db: Database, vector_store: VectorStore, tmp_path: Path) -> None:[m
+[32m+[m[32m    result = _pipeline(db, vector_store).ingest_sql(str(_write_sqlite(tmp_path)), table="parts")[m
+[32m+[m[32m    assert result.status == "indexed"[m
+[32m+[m[32m    assert result.chunk_count == 2[m
+[32m+[m[32m    assert result.metadata["doc_type"] == "tabular"[m
+[32m+[m[32m    assert result.path.startswith("sqlite://")[m
+[32m+[m
+[32m+[m[32m    record = DocumentRepository(db).get_by_id(result.document_id)[m
+[32m+[m[32m    assert record is not None[m
+[32m+[m[32m    assert record.status == "indexed"[m
+[32m+[m[32m    assert record.doc_type == "tabular"[m
+[32m+[m[32m    assert record.page_count == 2[m
+[32m+[m[32m    assert record.source_path.startswith("sqlite://")[m
+[32m+[m[32m    assert vector_store.count() == 2[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_ingest_sql_skips_unchanged_on_repeat([m
+[32m+[m[32m    db: Database, vector_store: VectorStore, tmp_path: Path[m
+[32m+[m[32m) -> None:[m
+[32m+[m[32m    pipeline = _pipeline(db, vector_store)[m
+[32m+[m[32m    source = str(_write_sqlite(tmp_path))[m
+[32m+[m[32m    first = pipeline.ingest_sql(source, table="parts")[m
+[32m+[m[32m    second = pipeline.ingest_sql(source, table="parts")[m
+[32m+[m[32m    assert first.status == "indexed"[m
+[32m+[m[32m    assert second.status == "skipped"[m
+[32m+[m[32m    assert vector_store.count() == first.chunk_count[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_ingest_sql_force_reindexes([m
+[32m+[m[32m    db: Database, vector_store: VectorStore, tmp_path: Path[m
+[32m+[m[32m) -> None:[m
+[32m+[m[32m    pipeline = _pipeline(db, vector_store)[m
+[32m+[m[32m    source = str(_write_sqlite(tmp_path))[m
+[32m+[m[32m    first = pipeline.ingest_sql(source, table="parts")[m
+[32m+[m[32m    second = pipeline.ingest_sql(source, table="parts", force=True)[m
+[32m+[m[32m    assert first.status == "indexed"[m
+[32m+[m[32m    assert second.status == "indexed"[m
+[32m+[m[32m    assert vector_store.count() == first.chunk_count[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_ingest_sql_custom_query_and_limit([m
+[32m+[m[32m    db: Database, vector_store: VectorStore, tmp_path: Path[m
+[32m+[m[32m) -> None:[m
+[32m+[m[32m    source = str(_write_sqlite(tmp_path))[m
+[32m+[m[32m    result = _pipeline(db, vector_store).ingest_sql([m
+[32m+[m[32m        source, query="SELECT name FROM parts", limit=1[m
+[32m+[m[32m    )[m
+[32m+[m[32m    assert result.status == "indexed"[m
+[32m+[m[32m    assert result.chunk_count == 1[m
+[32m+[m[32m    assert result.metadata["doc_type"] == "tabular"[m

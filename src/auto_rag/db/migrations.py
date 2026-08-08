@@ -19,6 +19,38 @@ class Migration:
     statements: tuple[str, ...]
 
 
+_DOCUMENTS_DDL: str = """
+CREATE TABLE documents (
+    id           INTEGER PRIMARY KEY,
+    source_path  TEXT NOT NULL,
+    file_hash    TEXT NOT NULL UNIQUE,
+    doc_type     TEXT NOT NULL CHECK (
+        doc_type IN (
+            'service_manual','repair_manual','dtc','tsb','wiring_diagram','tabular'
+        )
+    ),
+    title        TEXT,
+    make         TEXT,
+    model        TEXT,
+    year         INTEGER,
+    engine       TEXT,
+    vin          TEXT,
+    page_count   INTEGER NOT NULL DEFAULT 0,
+    chunk_count  INTEGER NOT NULL DEFAULT 0,
+    status       TEXT NOT NULL DEFAULT 'pending' CHECK (
+        status IN ('pending','indexed','failed')
+    ),
+    error        TEXT,
+    ingested_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+)
+"""
+
+_DOCUMENTS_COLUMNS: str = (
+    "id, source_path, file_hash, doc_type, title, make, model, year, engine, "
+    "vin, page_count, chunk_count, status, error, ingested_at, updated_at"
+)
+
 _INITIAL_SCHEMA: tuple[str, ...] = (
     # ------------------------------------------------------------------ #
     # Schema bookkeeping
@@ -160,30 +192,7 @@ _INITIAL_SCHEMA: tuple[str, ...] = (
     # ------------------------------------------------------------------ #
     # Source documents (ingestion tracking)
     # ------------------------------------------------------------------ #
-    """
-    CREATE TABLE IF NOT EXISTS documents (
-        id           INTEGER PRIMARY KEY,
-        source_path  TEXT NOT NULL,
-        file_hash    TEXT NOT NULL UNIQUE,
-        doc_type     TEXT NOT NULL CHECK (
-            doc_type IN ('service_manual','repair_manual','dtc','tsb','wiring_diagram')
-        ),
-        title        TEXT,
-        make         TEXT,
-        model        TEXT,
-        year         INTEGER,
-        engine       TEXT,
-        vin          TEXT,
-        page_count   INTEGER NOT NULL DEFAULT 0,
-        chunk_count  INTEGER NOT NULL DEFAULT 0,
-        status       TEXT NOT NULL DEFAULT 'pending' CHECK (
-            status IN ('pending','indexed','failed')
-        ),
-        error        TEXT,
-        ingested_at  TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
-    )
-    """,
+    _DOCUMENTS_DDL,
     # ------------------------------------------------------------------ #
     # Conversations (persisted chat + vehicle context for memory)
     # ------------------------------------------------------------------ #
@@ -219,5 +228,18 @@ MIGRATIONS: tuple[Migration, ...] = (
         description="Initial schema: vehicles, parts, labor, service history, "
         "maintenance, DTCs, documents, conversations.",
         statements=_INITIAL_SCHEMA,
+    ),
+    Migration(
+        version="0002_tabular_doc_type",
+        description="Allow doc_type 'tabular' for CSV/SQL ingestion.",
+        statements=(
+            "ALTER TABLE documents RENAME TO documents_0002_old",
+            _DOCUMENTS_DDL,
+            (
+                "INSERT INTO documents (" + _DOCUMENTS_COLUMNS + ") "
+                "SELECT " + _DOCUMENTS_COLUMNS + " FROM documents_0002_old"
+            ),
+            "DROP TABLE documents_0002_old",
+        ),
     ),
 )

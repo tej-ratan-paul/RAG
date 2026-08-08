@@ -4,6 +4,10 @@ Usage::
 
     python -m auto_rag.ingestion.cli --directory data/documents
     python -m auto_rag.ingestion.cli --file manual.pdf --doc-type service_manual
+    python -m auto_rag.ingestion.cli --csv parts.csv
+    python -m auto_rag.ingestion.cli --sqlite workshop.db --table parts
+    python -m auto_rag.ingestion.cli --sqlite workshop.db --query "SELECT * FROM dtc_codes WHERE severity='high'"
+    python -m auto_rag.ingestion.cli --sql-url "postgresql://user:pass@host/db" --table vehicles
     python -m auto_rag.ingestion.cli --reset
 """
 
@@ -24,6 +28,15 @@ from auto_rag.logging_config import get_logger, setup_logging
 
 logger = get_logger(__name__)
 
+_DOC_TYPE_CHOICES = [
+    "service_manual",
+    "repair_manual",
+    "dtc",
+    "tsb",
+    "wiring_diagram",
+    "tabular",
+]
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -33,9 +46,30 @@ def build_parser() -> argparse.ArgumentParser:
     source = parser.add_mutually_exclusive_group(required=False)
     source.add_argument("--directory", type=Path, help="Directory of documents to ingest.")
     source.add_argument("--file", type=Path, help="Single document to ingest.")
+    source.add_argument("--csv", type=Path, help="Single CSV file to ingest (row per chunk).")
+    sql = parser.add_mutually_exclusive_group(required=False)
+    sql.add_argument("--sqlite", type=Path, help="SQLite database file to ingest rows from.")
+    sql.add_argument(
+        "--sql-url",
+        type=str,
+        help=(
+            "Remote SQL connection URL (postgresql://... or mysql://...). "
+            "Requires the matching optional driver package."
+        ),
+    )
+    parser.add_argument("--table", default=None, help="Table to ingest (SELECT * FROM <table>).")
+    parser.add_argument(
+        "--query", default=None, help="Raw SQL query to ingest instead of a whole table."
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Maximum number of SQL rows to ingest.",
+    )
     parser.add_argument(
         "--doc-type",
-        choices=["service_manual", "repair_manual", "dtc", "tsb", "wiring_diagram"],
+        choices=_DOC_TYPE_CHOICES,
         default=None,
         help="Explicit document type override.",
     )
@@ -47,6 +81,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    _validate_source_args(args)
+
     settings = get_settings()
     settings.prepare_directories()
     setup_logging(settings)
@@ -74,17 +110,42 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     results: list = []
-    if args.file:
+    if args.sqlite or args.sql_url:
+        source = args.sqlite or args.sql_url
+        results.append(
+            pipeline.ingest_sql(
+                source,
+                table=args.table,
+                query=args.query,
+                limit=args.limit,
+                force=args.force,
+            )
+        )
+    elif args.file:
         results.append(pipeline.ingest_path(args.file, doc_type=args.doc_type, force=args.force))
+    elif args.csv:
+        results.append(pipeline.ingest_csv(args.csv, doc_type=args.doc_type, force=args.force))
     elif args.directory:
         results = pipeline.ingest_directory(args.directory, doc_type=args.doc_type, force=args.force)
     else:
-        parser = build_parser()
-        parser.error("One of --directory or --file is required")
+        build_parser().error("One of --directory, --file, --csv, --sqlite, or --sql-url is required")
         return 2
 
     _report(results, vector_store.count())
     return 1 if any(r.is_error for r in results) else 0
+
+
+def _validate_source_args(args: argparse.Namespace) -> None:
+    """Reject invalid source flag combinations before any heavy setup."""
+    parser = build_parser()
+    has_file_source = bool(args.directory or args.file or args.csv)
+    has_sql_source = bool(args.sqlite or args.sql_url)
+    if has_file_source and has_sql_source:
+        parser.error("--sqlite/--sql-url cannot be combined with --directory/--file/--csv")
+    if not has_file_source and not has_sql_source:
+        parser.error("One of --directory, --file, --csv, --sqlite, or --sql-url is required")
+    if not has_sql_source and (args.table or args.query or args.limit is not None):
+        parser.error("--table/--query/--limit require --sqlite or --sql-url")
 
 
 def _report(results, total_chunks: int) -> None:

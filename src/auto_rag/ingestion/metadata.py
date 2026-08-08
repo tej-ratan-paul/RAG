@@ -124,11 +124,11 @@ class DocumentMetadata:
         }
 
 
-def _infer_doc_type(text: str) -> DocType:
+def _infer_doc_type(text: str) -> DocType | None:
     for pattern, doc_type in _DOC_TYPE_PATTERNS:
         if pattern.search(text):
             return doc_type
-    return DOCUMENT_TYPE_SERVICE_MANUAL
+    return None
 
 
 def _find_make(text: str) -> str | None:
@@ -176,6 +176,7 @@ class MetadataExtractor:
         path: Path,
         pages: list[PageContent],
         doc_type: DocType | None = None,
+        fallback_type: DocType = DOCUMENT_TYPE_SERVICE_MANUAL,
     ) -> DocumentMetadata:
         """Extract metadata combining filename hints and leading pages.
 
@@ -183,13 +184,15 @@ class MetadataExtractor:
             path: Source file path (filename contributes strong hints).
             pages: Loaded pages (leading pages scanned for content hints).
             doc_type: Explicit document type override.
+            fallback_type: Type used when nothing is detected (tabulated data
+                such as CSV/SQL defaults to ``tabular``).
         """
         filename = path.stem.replace("_", " ").replace("-", " ").replace(".", " ")
         hints = " ".join(page.text for page in pages[: self.source_hints])
         haystack = f"{filename}\n{hints}"
 
         title = _clean_title(path.stem)
-        inferred_type = doc_type or _infer_doc_type(f"{filename} {hints}")
+        inferred_type = doc_type or _infer_doc_type(f"{filename} {hints}") or fallback_type
         make = _find_make(haystack)
         model = _find_model(haystack, make)
         year = _find_year(haystack)

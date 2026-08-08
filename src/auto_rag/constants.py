@@ -33,6 +33,7 @@ DOCUMENT_TYPE_REPAIR_MANUAL: Final[str] = "repair_manual"
 DOCUMENT_TYPE_DTC: Final[str] = "dtc"
 DOCUMENT_TYPE_TSB: Final[str] = "tsb"
 DOCUMENT_TYPE_WIRING_DIAGRAM: Final[str] = "wiring_diagram"
+DOCUMENT_TYPE_TABULAR: Final[str] = "tabular"
 
 DOCUMENT_TYPES: Final[tuple[str, ...]] = (
     DOCUMENT_TYPE_SERVICE_MANUAL,
@@ -40,4 +41,5 @@ DOCUMENT_TYPES: Final[tuple[str, ...]] = (
     DOCUMENT_TYPE_DTC,
     DOCUMENT_TYPE_TSB,
     DOCUMENT_TYPE_WIRING_DIAGRAM,
+    DOCUMENT_TYPE_TABULAR,
 )

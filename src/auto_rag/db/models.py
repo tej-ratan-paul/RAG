@@ -16,6 +16,7 @@ DocType = Literal[
     "dtc",
     "tsb",
     "wiring_diagram",
+    "tabular",
 ]
 
 DocStatus = Literal["pending", "indexed", "failed"]

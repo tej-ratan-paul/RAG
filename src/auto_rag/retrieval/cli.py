@@ -37,7 +37,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--year", type=int, default=None, help="Filter by model year.")
     parser.add_argument(
         "--doc-type",
-        choices=["service_manual", "repair_manual", "dtc", "tsb", "wiring_diagram"],
+        choices=["service_manual", "repair_manual", "dtc", "tsb", "wiring_diagram", "tabular"],
         default=None,
         help="Filter by document type.",
     )

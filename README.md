@@ -1,4 +1,3 @@
->>>>>>> origin/main
 # AutoRAG Repair Assistant
 
 An **agentic RAG (Retrieval-Augmented Generation)** assistant that answers
@@ -39,10 +38,13 @@ confidence scoring, and safety notes — it does not guess.
 
 - Loads PDF and plain-text documents (`pypdf`), with automatic detection of
   document type (service manual, repair manual, DTC, TSB, wiring diagram).
+- Loads **CSV files** and **SQL sources** (SQLite files or remote
+  Postgres/MySQL URLs) as row-per-chunk tabular data; credentials in stored
+  source labels are redacted.
 - Extracts vehicle metadata (make, model, year, engine, VIN) from text.
 - Recursive chunking with token-aware sizes and configurable overlap.
-- Deduplication by file hash; re-indexing only changed files (`--force` to
-  override).
+- Deduplication by file hash (or content fingerprint for SQL snapshots);
+  re-indexing only changed sources (`--force` to override).
 - Embedding cache (JSON, keyed by text hash) to speed up re-ingestion.
 
 **Retrieval**
@@ -211,6 +213,15 @@ auto-rag-ingest --directory data/documents
 The repo ships three demo documents: a Toyota Camry service manual (PDF),
 a Honda Civic maintenance schedule (TXT), and a DTC P0300 codesheet (PDF).
 
+To also index tabular workshop data, point ingestion at a CSV file or a SQL
+source (SQLite file or remote URL). Each row becomes its own retrievable chunk:
+
+```powershell
+auto-rag-ingest --csv data/parts.csv
+auto-rag-ingest --sqlite data/demo/workshop.db --table parts
+auto-rag-ingest --sql-url "postgresql://user:pass@host:5432/workshop" --table vehicles
+```
+
 **2. Ask a grounded question**
 
 ```powershell
@@ -249,12 +260,24 @@ Open <http://localhost:8501>.
 ```
 --directory DIR   ingest all documents in a directory
 --file FILE       ingest a single document
+--csv FILE        ingest a CSV file (one chunk per row)
+--sqlite FILE     ingest rows from a SQLite database file
+--sql-url URL     ingest rows from a remote SQL source (postgresql://, mysql://)
+--table TABLE     table to read (SELECT * FROM <table>)
+--query SQL       raw SQL query (takes precedence over --table)
+--limit N         cap the number of SQL rows ingested
 --doc-type TYPE   override document type (service_manual, repair_manual,
-                  dtc, tsb, wiring_diagram)
---force           re-index files already in the store
+                  dtc, tsb, wiring_diagram, tabular)
+--force           re-index sources already in the store
 --reset           delete all indexed chunks first
 --seed            seed demo structured data into SQLite
 ```
+
+File sources (`--directory` / `--file` / `--csv`) and SQL sources
+(`--sqlite` / `--sql-url`) are mutually exclusive; `--table`, `--query`, and
+`--limit` apply only to SQL ingestion. Remote SQL requires the matching
+optional driver (`psycopg2` for Postgres, `pymysql` for MySQL) — SQLite files
+need none.
 
 ### `auto-rag-retrieve`
 
@@ -338,7 +361,7 @@ ruff check src tests
 python -m pytest
 ```
 
-The suite currently contains **259 passing tests** covering ingestion,
+The suite currently contains **294 passing tests** covering ingestion,
 retrieval, the agentic graph, LLM adapters, database, configuration, the ops
 tools, and evaluation.
 
@@ -412,6 +435,4 @@ including:
 ## License
 
 MIT. See `LICENSE` (if present) for details.
-=======
-# RAG
->>>>>>> dfa02a97798de5db55e033826be6b5b0846fda87
+

@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+import sqlite3
+from pathlib import Path
+
+import pytest
+
 from auto_rag.db.connection import Database
 from auto_rag.db.repositories import DocumentRepository
 from auto_rag.ingestion.chunking import Chunker
@@ -98,3 +103,126 @@ def test_retrieval_roundtrip_after_ingestion(
     assert hits
     assert "brake" in hits[0]["text"].lower()
     assert hits[0]["metadata"]["make"] == "Toyota"
+
+
+# --------------------------------------------------------------------- #
+# CSV ingestion
+# --------------------------------------------------------------------- #
+def _write_csv(tmp_path: Path) -> Path:
+    path = tmp_path / "parts.csv"
+    path.write_text(
+        "part_number,name,unit_price\n"
+        "BP-101,Brake pads,45.50\n"
+        "OF-202,Oil filter,8.25\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_ingest_csv_end_to_end(db: Database, vector_store: VectorStore, tmp_path: Path) -> None:
+    result = _pipeline(db, vector_store).ingest_csv(_write_csv(tmp_path))
+    assert result.status == "indexed"
+    assert result.chunk_count == 2
+    assert result.metadata["doc_type"] == "tabular"
+
+    record = DocumentRepository(db).get_by_id(result.document_id)
+    assert record is not None
+    assert record.status == "indexed"
+    assert record.doc_type == "tabular"
+    assert record.page_count == 2
+    assert vector_store.count() == 2
+
+
+def test_ingest_csv_skips_on_repeat(db: Database, vector_store: VectorStore, tmp_path: Path) -> None:
+    pipeline = _pipeline(db, vector_store)
+    path = _write_csv(tmp_path)
+    first = pipeline.ingest_csv(path)
+    second = pipeline.ingest_csv(path)
+    assert first.status == "indexed"
+    assert second.status == "skipped"
+    assert vector_store.count() == first.chunk_count
+
+
+def test_ingest_csv_force_reindexes(db: Database, vector_store: VectorStore, tmp_path: Path) -> None:
+    pipeline = _pipeline(db, vector_store)
+    path = _write_csv(tmp_path)
+    first = pipeline.ingest_csv(path)
+    second = pipeline.ingest_csv(path, force=True)
+    assert first.status == "indexed"
+    assert second.status == "indexed"
+    assert vector_store.count() == first.chunk_count
+
+
+def test_ingest_csv_non_csv_rejected(db: Database, vector_store: VectorStore, tmp_path: Path) -> None:
+    path = tmp_path / "notes.txt"
+    path.write_text("not a csv", encoding="utf-8")
+    with pytest.raises(Exception):
+        _pipeline(db, vector_store).ingest_csv(path)
+
+
+# --------------------------------------------------------------------- #
+# SQL ingestion
+# --------------------------------------------------------------------- #
+def _write_sqlite(tmp_path: Path) -> Path:
+    path = tmp_path / "workshop.db"
+    conn = sqlite3.connect(path)
+    conn.execute("CREATE TABLE parts (part_number TEXT, name TEXT, unit_price REAL)")
+    conn.executemany(
+        "INSERT INTO parts VALUES (?, ?, ?)",
+        [("BP-101", "Brake pads", 45.5), ("OF-202", "Oil filter", 8.25)],
+    )
+    conn.commit()
+    conn.close()
+    return path
+
+
+def test_ingest_sql_end_to_end(db: Database, vector_store: VectorStore, tmp_path: Path) -> None:
+    result = _pipeline(db, vector_store).ingest_sql(str(_write_sqlite(tmp_path)), table="parts")
+    assert result.status == "indexed"
+    assert result.chunk_count == 2
+    assert result.metadata["doc_type"] == "tabular"
+    assert result.path.startswith("sqlite://")
+
+    record = DocumentRepository(db).get_by_id(result.document_id)
+    assert record is not None
+    assert record.status == "indexed"
+    assert record.doc_type == "tabular"
+    assert record.page_count == 2
+    assert record.source_path.startswith("sqlite://")
+    assert vector_store.count() == 2
+
+
+def test_ingest_sql_skips_unchanged_on_repeat(
+    db: Database, vector_store: VectorStore, tmp_path: Path
+) -> None:
+    pipeline = _pipeline(db, vector_store)
+    source = str(_write_sqlite(tmp_path))
+    first = pipeline.ingest_sql(source, table="parts")
+    second = pipeline.ingest_sql(source, table="parts")
+    assert first.status == "indexed"
+    assert second.status == "skipped"
+    assert vector_store.count() == first.chunk_count
+
+
+def test_ingest_sql_force_reindexes(
+    db: Database, vector_store: VectorStore, tmp_path: Path
+) -> None:
+    pipeline = _pipeline(db, vector_store)
+    source = str(_write_sqlite(tmp_path))
+    first = pipeline.ingest_sql(source, table="parts")
+    second = pipeline.ingest_sql(source, table="parts", force=True)
+    assert first.status == "indexed"
+    assert second.status == "indexed"
+    assert vector_store.count() == first.chunk_count
+
+
+def test_ingest_sql_custom_query_and_limit(
+    db: Database, vector_store: VectorStore, tmp_path: Path
+) -> None:
+    source = str(_write_sqlite(tmp_path))
+    result = _pipeline(db, vector_store).ingest_sql(
+        source, query="SELECT name FROM parts", limit=1
+    )
+    assert result.status == "indexed"
+    assert result.chunk_count == 1
+    assert result.metadata["doc_type"] == "tabular"

@@ -8,6 +8,7 @@ sources inline; the same numbering is preserved in the returned
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 
 from auto_rag.rag.models import Citation
@@ -19,11 +20,33 @@ __all__ = ["build_citations", "format_context", "format_citations"]
 
 _SNIPPET_MAX_CHARS: int = 300
 _SNIPPET_ELLIPSIS: str = "…"
+_URL_SCHEME: re.Pattern[str] = re.compile(r"^([a-z][a-z0-9+.-]*)://")
 
 
 def _chunk_source(chunk: RetrievedChunk) -> str:
     """Chunk source, falling back to metadata when not on the model."""
     return chunk.source or chunk.metadata.get("source", "")
+
+
+def _source_label(source: str) -> str:
+    """Render a chunk source as a short, readable label.
+
+    File paths yield their basename. URL sources (``sqlite://...``,
+    ``postgres://...``) yield the basename of the path plus any query string,
+    with credentials stripped.
+    """
+    if not source:
+        return "unknown"
+    match = _URL_SCHEME.match(source)
+    if match is None:
+        return Path(source).name
+    rest = source[match.end() :]
+    if "@" in rest:
+        rest = rest.split("@", 1)[1]
+    base, separator, query = rest.partition("?")
+    name = Path(base).name or base
+    suffix = f"?{query}" if separator else ""
+    return f"{name}{suffix}"
 
 
 def build_citations(chunks: list[RetrievedChunk]) -> list[Citation]:
@@ -62,7 +85,7 @@ def format_context(chunks: list[RetrievedChunk]) -> str:
         return ""
     parts: list[str] = []
     for index, chunk in enumerate(chunks, start=1):
-        source = Path(_chunk_source(chunk)).name if _chunk_source(chunk) else "unknown"
+        source = _source_label(_chunk_source(chunk))
         page = f", page {chunk.page}" if chunk.page is not None else ""
         parts.append(f"[{index}] ({source}{page}) {chunk.text}")
     return "\n\n".join(parts)
@@ -74,7 +97,7 @@ def format_citations(citations: list[Citation]) -> str:
         return ""
     lines: list[str] = []
     for citation in citations:
-        source = Path(citation.source).name if citation.source else "unknown"
+        source = _source_label(citation.source)
         page = f"p{citation.page}" if citation.page is not None else ""
         vehicle = " ".join(
             part for part in (citation.make, citation.model) if part
