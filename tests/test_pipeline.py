@@ -9,6 +9,7 @@ import pytest
 
 from auto_rag.db.connection import Database
 from auto_rag.db.repositories import DocumentRepository
+from auto_rag.errors import IngestionError
 from auto_rag.ingestion.chunking import Chunker
 from auto_rag.ingestion.metadata import MetadataExtractor
 from auto_rag.ingestion.pipeline import IngestionPipeline, sha256_file
@@ -156,7 +157,7 @@ def test_ingest_csv_force_reindexes(db: Database, vector_store: VectorStore, tmp
 def test_ingest_csv_non_csv_rejected(db: Database, vector_store: VectorStore, tmp_path: Path) -> None:
     path = tmp_path / "notes.txt"
     path.write_text("not a csv", encoding="utf-8")
-    with pytest.raises(Exception):
+    with pytest.raises(IngestionError, match="Not a CSV file"):
         _pipeline(db, vector_store).ingest_csv(path)
 
 
