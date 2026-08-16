@@ -38,7 +38,7 @@ jobs:
         run: python -m pytest -q
 
       - name: Smoke — health CLI
-        run: auto-rag-health --no-llm --format json > /dev/null
+        run: auto-rag-health --no-llm --format json
 
       - name: Smoke — config validation CLI
         run: auto-rag-config-check --no-llm --format json > /dev/null
