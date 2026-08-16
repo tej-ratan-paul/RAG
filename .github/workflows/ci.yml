@@ -37,8 +37,11 @@ jobs:
       - name: Pytest
         run: python -m pytest -q
 
+      - name: Initialize vector store
+        run: auto-rag-ingest --directory data/documents
+
       - name: Smoke — health CLI
-        run: auto-rag-health --no-llm --format json
+        run: auto-rag-health --no-llm --format json > /dev/null
 
       - name: Smoke — config validation CLI
         run: auto-rag-config-check --no-llm --format json > /dev/null
