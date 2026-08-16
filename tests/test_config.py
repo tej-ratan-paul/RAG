@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -99,10 +101,13 @@ def test_retrieval_ordering_validated(monkeypatch: pytest.MonkeyPatch) -> None:
         Settings(_env_file=None)
 
 
-def test_explicit_sqlite_path_override(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DATABASE__PATH", r"C:\tmp\custom.db")
+def test_explicit_sqlite_path_override(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    expected = (tmp_path / "custom.db").expanduser().resolve()
+    monkeypatch.setenv("DATABASE__PATH", str(expected))
     settings = Settings(_env_file=None)
-    assert str(settings.sqlite_path) == r"C:\tmp\custom.db"
+    assert settings.sqlite_path == expected
 
 
 def test_get_settings_returns_cached_singleton() -> None:
